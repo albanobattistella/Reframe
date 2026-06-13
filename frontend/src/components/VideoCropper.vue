@@ -119,8 +119,11 @@ const selectPreset = (preset: any) => {
 }
 
 // Drag logic
+const hasMoved = ref(false)
+
 const startDrag = (e: MouseEvent) => {
   isDragging.value = true
+  hasMoved.value = false
   dragStartX.value = e.clientX
   dragStartY.value = e.clientY
   dragStartLeft.value = boxLeft.value
@@ -133,6 +136,10 @@ const onDrag = (e: MouseEvent) => {
   if (!isDragging.value) return
   const dx = e.clientX - dragStartX.value
   const dy = e.clientY - dragStartY.value
+  
+  if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+    hasMoved.value = true
+  }
   
   if (!containerRef.value) return
   
@@ -148,6 +155,13 @@ const onDrag = (e: MouseEvent) => {
 }
 
 const endDrag = () => {
+  if (!hasMoved.value && videoRef.value) {
+    if (videoRef.value.paused) {
+      videoRef.value.play()
+    } else {
+      videoRef.value.pause()
+    }
+  }
   isDragging.value = false
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', endDrag)
