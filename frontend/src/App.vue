@@ -4,6 +4,7 @@ import FileUpload from './components/FileUpload.vue'
 import VideoCropper from './components/VideoCropper.vue'
 import BatchProcessor from './components/BatchProcessor.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
 
 const videoFiles = ref<{url: string, file: File}[]>([])
 
@@ -20,7 +21,10 @@ const handleReset = () => {
 </script>
 
 <template>
-  <LanguageSwitcher />
+  <div class="top-controls">
+    <ThemeToggle />
+    <LanguageSwitcher />
+  </div>
   <header class="header">
     <h1 class="text-gradient">{{ $t('app.title') }}</h1>
     <p>{{ $t('app.subtitle') }}</p>
@@ -66,9 +70,20 @@ const handleReset = () => {
 </template>
 
 <style scoped>
+.top-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .header {
   text-align: center;
   margin-bottom: 3rem;
+  margin-top: 2rem;
 }
 
 .header h1 {
@@ -106,7 +121,7 @@ const handleReset = () => {
 .footer-content {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.25rem;
   padding: 1rem 2.5rem;
   border-radius: var(--radius-full);
 }
