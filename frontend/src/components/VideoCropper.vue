@@ -83,6 +83,7 @@ const logoY = ref(10)
 const logoRotation = ref(0)
 const logoScale = ref(1)
 const logoOpacity = ref(100)
+const showAdvancedOptions = ref(false)
 
 const handleLogoUpload = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -467,46 +468,55 @@ onMounted(() => {
         </label>
       </div>
 
-      <div v-if="videoDuration > 0" class="options-section">
-        <label class="option-label">
-          <span>Video Trimmen</span>
-          <div class="trim-inputs">
-            <input type="number" step="0.1" min="0" :max="trimEnd" v-model.number="trimStart" class="input-number" />
-            <span>bis</span>
-            <input type="number" step="0.1" :min="trimStart" :max="videoDuration" v-model.number="trimEnd" class="input-number" />
-            <span>Sek.</span>
-          </div>
-          <div class="range-slider-container">
-            <div class="slider-track-bg"></div>
-            <div class="slider-track-fill" :style="{
-              left: `${(trimStart / videoDuration) * 100}%`,
-              width: `${((trimEnd - trimStart) / videoDuration) * 100}%`
-            }"></div>
-            <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimStart" class="range-slider" />
-            <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimEnd" class="range-slider" />
-          </div>
+      <div class="advanced-toggle" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+        <label class="option-label checkbox-label" style="cursor: pointer; color: var(--accent-neon); font-weight: 600;">
+          <input type="checkbox" v-model="showAdvancedOptions" />
+          <span>🔧 Erweiterte Optionen (Trimmen, Logo)</span>
         </label>
       </div>
-      
-      <div class="options-section">
-        <label class="option-label">
-          <span>Wasserzeichen / Logo</span>
-          <div class="logo-upload-area">
-            <input type="file" accept="image/png, image/jpeg, image/svg+xml" @change="handleLogoUpload" class="file-input" />
-            <div v-if="logoUrl" class="logo-controls">
-              <label>
-                Größe:
-                <input type="range" min="0.2" max="3" step="0.1" v-model.number="logoScale" />
-              </label>
-              <label>
-                Deckkraft:
-                <input type="range" min="0" max="100" step="1" v-model.number="logoOpacity" />
-              </label>
-              <button class="btn btn-secondary btn-sm" @click="clearLogo">Entfernen</button>
+
+      <template v-if="showAdvancedOptions">
+        <div v-if="videoDuration > 0" class="options-section">
+          <label class="option-label">
+            <span>Video Trimmen</span>
+            <div class="trim-inputs">
+              <input type="number" step="0.1" min="0" :max="trimEnd" v-model.number="trimStart" class="input-number" />
+              <span>bis</span>
+              <input type="number" step="0.1" :min="trimStart" :max="videoDuration" v-model.number="trimEnd" class="input-number" />
+              <span>Sek.</span>
             </div>
-          </div>
-        </label>
-      </div>
+            <div class="range-slider-container">
+              <div class="slider-track-bg"></div>
+              <div class="slider-track-fill" :style="{
+                left: `${(trimStart / videoDuration) * 100}%`,
+                width: `${((trimEnd - trimStart) / videoDuration) * 100}%`
+              }"></div>
+              <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimStart" class="range-slider" />
+              <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimEnd" class="range-slider" />
+            </div>
+          </label>
+        </div>
+        
+        <div class="options-section">
+          <label class="option-label">
+            <span>Wasserzeichen / Logo</span>
+            <div class="logo-upload-area">
+              <input type="file" accept="image/png, image/jpeg, image/svg+xml" @change="handleLogoUpload" class="file-input" />
+              <div v-if="logoUrl" class="logo-controls">
+                <label>
+                  Größe:
+                  <input type="range" min="0.2" max="3" step="0.1" v-model.number="logoScale" />
+                </label>
+                <label>
+                  Deckkraft:
+                  <input type="range" min="0" max="100" step="1" v-model.number="logoOpacity" />
+                </label>
+                <button class="btn btn-secondary btn-sm" @click="clearLogo">Entfernen</button>
+              </div>
+            </div>
+          </label>
+        </div>
+      </template>
 
       <div class="options-section">
         <label class="option-label">
@@ -548,7 +558,7 @@ onMounted(() => {
   display: flex;
   gap: 2rem;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1400px;
 }
 
 @media (max-width: 768px) {
@@ -558,13 +568,14 @@ onMounted(() => {
 }
 
 .video-section {
-  flex: 2;
+  flex: 2.5;
   padding: 1rem;
   display: flex;
   justify-content: center;
   align-items: center;
   background: var(--bg-secondary);
-  height: 600px;
+  height: 75vh;
+  min-height: 600px;
 }
 
 .video-container {
