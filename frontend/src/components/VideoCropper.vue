@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps<{
   videoUrl: string
@@ -391,9 +391,22 @@ const exportVideo = async () => {
   }
 }
 
-// Window resize listener
+// Resize observer to handle layout shifts robustly
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
-  window.addEventListener('resize', initializeCropBox)
+  if (containerRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      initializeCropBox()
+    })
+    resizeObserver.observe(containerRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
 })
 </script>
 
@@ -713,6 +726,7 @@ onMounted(() => {
 
 .logo-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -726,6 +740,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  flex: 1 1 auto;
 }
 
 .options-section {
