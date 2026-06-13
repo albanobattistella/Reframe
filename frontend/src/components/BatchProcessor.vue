@@ -38,6 +38,19 @@ const processAll = async () => {
 
   isProcessing.value = false
 }
+
+const applySettingsToAll = (sourceIndex: number) => {
+  const sourceCropper = croppers.value[sourceIndex]
+  if (!sourceCropper) return
+  
+  const settings = sourceCropper.getSettings()
+  
+  croppers.value.forEach((cropper, idx) => {
+    if (idx !== sourceIndex && cropper) {
+      cropper.applySettings(settings)
+    }
+  })
+}
 </script>
 
 <template>
@@ -61,6 +74,9 @@ const processAll = async () => {
       <div v-for="(fileObj, index) in files" :key="index" class="batch-item">
         <div class="batch-item-header">
           <h3>{{ $t('batch.video') }} {{ index + 1 }}: {{ fileObj.file.name }}</h3>
+          <button class="btn btn-sm btn-secondary" @click="applySettingsToAll(index)" :disabled="isProcessing">
+            {{ $t('batch.apply_to_all') }}
+          </button>
         </div>
         <VideoCropper 
           :ref="el => { if (el) croppers[index] = el as any }"

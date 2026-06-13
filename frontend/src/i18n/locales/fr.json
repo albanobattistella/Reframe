@@ -34,7 +34,7 @@
     "processing": "Traitement...",
     "render_again": "Rendre à nouveau",
     "crop_export": "Recadrer et exporter",
-    "download": "Télécharger la dernière vidéo 📥",
+    "download": "Télécharger la vidéo 📥",
     "choose_new": "Choisir une nouvelle vidéo",
     "error_export": "Erreur lors de l'exportation.",
     "error_occurred": "Une erreur est survenue : "
@@ -45,6 +45,7 @@
     "processing": "Traitement de {current} sur {total}...",
     "cancel": "Annuler",
     "completed": "Toutes les vidéos ont été traitées avec succès ! Vous pouvez les télécharger ci-dessous.",
-    "video": "Vidéo"
+    "video": "Vidéo",
+    "apply_to_all": "Appliquer les paramètres à tous"
   }
 }

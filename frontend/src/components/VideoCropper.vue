@@ -399,6 +399,56 @@ const exportVideo = async (): Promise<void> => {
   })
 }
 
+const getSettings = () => ({
+  selectedPreset: selectedPreset.value,
+  customRatioW: customRatioW.value,
+  customRatioH: customRatioH.value,
+  quality: quality.value,
+  muteAudio: muteAudio.value,
+  trimStart: trimStart.value,
+  trimEnd: trimEnd.value,
+  logoFile: logoFile.value,
+  logoX: logoX.value,
+  logoY: logoY.value,
+  logoRotation: logoRotation.value,
+  logoScale: logoScale.value,
+  logoOpacity: logoOpacity.value
+})
+
+const applySettings = (settings: any) => {
+  selectedPreset.value = settings.selectedPreset
+  customRatioW.value = settings.customRatioW
+  customRatioH.value = settings.customRatioH
+  quality.value = settings.quality
+  muteAudio.value = settings.muteAudio
+  
+  if (settings.trimStart !== undefined && settings.trimStart < videoDuration.value) {
+    trimStart.value = settings.trimStart
+  }
+  if (settings.trimEnd !== undefined && settings.trimEnd <= videoDuration.value) {
+    trimEnd.value = settings.trimEnd
+  }
+  if (trimStart.value > trimEnd.value) {
+    trimStart.value = Math.max(0, trimEnd.value - 0.1)
+  }
+
+  logoFile.value = settings.logoFile
+  if (logoFile.value) {
+    if (logoUrl.value) URL.revokeObjectURL(logoUrl.value)
+    logoUrl.value = URL.createObjectURL(logoFile.value)
+  } else {
+    clearLogo()
+  }
+
+  logoX.value = settings.logoX
+  logoY.value = settings.logoY
+  logoRotation.value = settings.logoRotation
+  logoScale.value = settings.logoScale
+  logoOpacity.value = settings.logoOpacity
+  
+  initializeCropBox()
+}
+
 // Resize observer to handle layout shifts robustly
 let resizeObserver: ResizeObserver | null = null
 
@@ -418,7 +468,9 @@ onUnmounted(() => {
 })
 
 defineExpose({
-  runExport: exportVideo
+  runExport: exportVideo,
+  getSettings,
+  applySettings
 })
 </script>
 

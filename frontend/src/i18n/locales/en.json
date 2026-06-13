@@ -34,7 +34,7 @@
     "processing": "Processing...",
     "render_again": "Render Again",
     "crop_export": "Crop & Export",
-    "download": "Download Last Video 📥",
+    "download": "Download Video 📥",
     "choose_new": "Choose New Video",
     "error_export": "Error during export.",
     "error_occurred": "An error occurred: "
@@ -45,6 +45,7 @@
     "processing": "Processing {current} of {total}...",
     "cancel": "Cancel",
     "completed": "All videos processed successfully! You can download them below.",
-    "video": "Video"
+    "video": "Video",
+    "apply_to_all": "Apply settings to all"
   }
 }
