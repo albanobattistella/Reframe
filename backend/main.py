@@ -3,11 +3,14 @@ import os
 import re
 import uuid
 import subprocess
+import json
+import base64
 from fastapi import FastAPI, UploadFile, Form, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Optional
+from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI(title="Reframe API")
 
@@ -45,6 +48,50 @@ def get_video_duration(filepath: str) -> float:
         return float(result.stdout.strip())
     except Exception:
         return 0.0
+
+def get_video_dimensions(filepath: str) -> tuple[int, int]:
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height", "-of",
+             "csv=p=0", filepath],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        w, h = result.stdout.strip().split(',')
+        return int(w), int(h)
+    except Exception:
+        return 1920, 1080
+
+def create_text_image(t_item: dict, output_path: str):
+    try:
+        content = t_item.get("content", "")
+        color = t_item.get("color", "#ffffff")
+        shadow = t_item.get("shadow", True)
+        
+        img = Image.new('RGBA', (2000, 2000), (255, 255, 255, 0))
+        d = ImageDraw.Draw(img)
+        font_size = 100
+        try:
+            font = ImageFont.truetype("arial.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
+            
+        lines = content.split('\n')
+        y_offset = 50
+        for line in lines:
+            if shadow:
+                d.text((50+4, y_offset+4), line, font=font, fill=(0,0,0, 200))
+            d.text((50, y_offset), line, font=font, fill=color)
+            y_offset += font_size * 1.2
+            
+        bbox = img.getbbox()
+        if bbox:
+            img = img.crop(bbox)
+        img.save(output_path)
+    except Exception as e:
+        print(f"Error creating text image: {e}")
 
 async def process_video_ffmpeg(
     job_id: str, 
@@ -309,6 +356,99 @@ async def process_video(
     ))
     
     return {"job_id": job_id}
+
+@app.post("/api/automate")
+async def automate_process(
+    video: UploadFile = File(...),
+    config: UploadFile = File(...)
+):
+    job_id = str(uuid.uuid4())
+    ext = os.path.splitext(video.filename)[1] or ".mp4" if video.filename else ".mp4"
+    input_filename = f"{job_id}_in{ext}"
+    input_path = os.path.join(UPLOAD_DIR, input_filename)
+    
+    # Save video
+    content = await video.read()
+    with open(input_path, "wb") as f:
+        f.write(content)
+        
+    # Read config
+    config_content = await config.read()
+    settings = json.loads(config_content.decode('utf-8'))
+    
+    vw, vh = get_video_dimensions(input_path)
+    vr = vw / vh
+    
+    preset = settings.get("selectedPreset", {})
+    if preset.get("id") == "custom":
+        tr = settings.get("customRatioW", 16) / settings.get("customRatioH", 9)
+    else:
+        tr = preset.get("ratio", 9/16)
+        
+    if tr > vr:
+        cw = vw
+        ch = vw / tr
+    else:
+        ch = vh
+        cw = vh * tr
+        
+    cw = int(cw)
+    ch = int(ch)
+    x = int((vw - cw) / 2)
+    y = int((vh - ch) / 2)
+    
+    logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities = [], [], [], [], [], [], []
+    for i, w in enumerate(settings.get("watermarks", [])):
+        if "fileBase64" in w and w["fileBase64"]:
+            b64 = w["fileBase64"].split(",")[1] if "," in w["fileBase64"] else w["fileBase64"]
+            img_data = base64.b64decode(b64)
+            logo_ext = ".png"
+            if w.get("fileMime") == "image/jpeg": logo_ext = ".jpg"
+            elif w.get("fileMime") == "image/svg+xml": logo_ext = ".svg"
+            
+            logo_path = os.path.join(UPLOAD_DIR, f"{job_id}_logo_{i}{logo_ext}")
+            with open(logo_path, "wb") as f:
+                f.write(img_data)
+                
+            logo_paths.append(logo_path)
+            logoWs.append(int(w.get("relativeScale", 0) * cw))
+            logoHs.append(None)
+            logoXs.append(int(w.get("relativeX", 0) * cw))
+            logoYs.append(int(w.get("relativeY", 0) * cw))
+            logoRotations.append(w.get("rotation", 0))
+            logoOpacities.append(w.get("opacity", 100))
+            
+    text_paths, textXs, textYs, textWs, textHs, textRotations = [], [], [], [], [], []
+    for i, t in enumerate(settings.get("texts", [])):
+        if t.get("content"):
+            text_path = os.path.join(UPLOAD_DIR, f"{job_id}_text_{i}.png")
+            create_text_image(t, text_path)
+            text_paths.append(text_path)
+            textWs.append(int(t.get("relativeScale", 0) * cw))
+            textHs.append(None)
+            textXs.append(int(t.get("relativeX", 0) * cw))
+            textYs.append(int(t.get("relativeY", 0) * cw))
+            textRotations.append(t.get("rotation", 0))
+            
+    output_filename = f"{job_id}_out.mp4"
+    output_path = os.path.join(EXPORT_DIR, output_filename)
+    
+    quality = settings.get("quality", "high")
+    muteAudio = "true" if settings.get("muteAudio") else "false"
+    useGpu = "true" if settings.get("useGpu") else "false"
+    trimStart = settings.get("trimStart")
+    trimEnd = settings.get("trimEnd")
+    
+    await process_video_ffmpeg(
+        job_id, input_path, output_path,
+        x, y, cw, ch, quality, muteAudio, useGpu,
+        trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
+        text_paths, textXs, textYs, textWs, textHs, textRotations
+    )
+    
+    if os.path.exists(output_path):
+        return FileResponse(output_path, media_type="video/mp4", filename=f"automated_{video.filename}")
+    return JSONResponse(status_code=500, content={"detail": "Video processing failed"})
 
 @app.websocket("/ws/progress/{job_id}")
 async def progress_ws(websocket: WebSocket, job_id: str):
