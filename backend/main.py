@@ -46,17 +46,23 @@ def get_video_duration(filepath: str) -> float:
     except Exception:
         return 0.0
 
-async def process_video_ffmpeg(job_id: str, input_path: str, output_path: str, x: int, y: int, w: int, h: int):
+async def process_video_ffmpeg(job_id: str, input_path: str, output_path: str, x: int, y: int, w: int, h: int, quality: str, muteAudio: str):
     duration = get_video_duration(input_path)
     job_status[job_id] = "processing"
     job_progress[job_id] = 0
     
-    # CRF 18 for high quality (visually lossless for most social media)
+    # Quality settings
+    crf = "18" if quality == "high" else "23"
+    preset = "slow" if quality == "high" else "fast"
+    
+    # Audio settings
+    audio_args = ["-an"] if muteAudio == "true" else ["-c:a", "copy"]
+    
     cmd = [
         "ffmpeg", "-y", "-i", input_path,
         "-vf", f"crop={w}:{h}:{x}:{y}",
-        "-c:v", "libx264", "-crf", "18", "-preset", "fast",
-        "-c:a", "copy",
+        "-c:v", "libx264", "-crf", crf, "-preset", preset,
+        *audio_args,
         output_path
     ]
     
@@ -115,10 +121,12 @@ async def process_video(
     x: int = Form(...),
     y: int = Form(...),
     width: int = Form(...),
-    height: int = Form(...)
+    height: int = Form(...),
+    quality: str = Form("high"),
+    muteAudio: str = Form("false")
 ):
     job_id = str(uuid.uuid4())
-    ext = os.path.splitext(file.filename)[1] or ".mp4"
+    ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
     input_filename = f"{job_id}_in{ext}"
     input_path = os.path.join(UPLOAD_DIR, input_filename)
     
@@ -129,7 +137,7 @@ async def process_video(
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
     
-    asyncio.create_task(process_video_ffmpeg(job_id, input_path, output_path, x, y, width, height))
+    asyncio.create_task(process_video_ffmpeg(job_id, input_path, output_path, x, y, width, height, quality, muteAudio))
     
     return {"job_id": job_id}
 
@@ -157,11 +165,11 @@ async def progress_ws(websocket: WebSocket, job_id: str):
             active_connections[job_id].remove(websocket)
 
 @app.get("/api/download/{job_id}")
-async def download_video(job_id: str):
+async def download_video(job_id: str, filename: str = "reframe_export.mp4"):
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
     if os.path.exists(output_path):
-        return FileResponse(output_path, media_type="video/mp4", filename=f"reframe_{job_id}.mp4")
+        return FileResponse(output_path, media_type="video/mp4", filename=filename)
     return JSONResponse(status_code=404, content={"detail": "File not found"})
 
 # Try to serve frontend statically if the directory exists

@@ -34,6 +34,11 @@ const dragStartTop = ref(0)
 const isExporting = ref(false)
 const progress = ref(0)
 const downloadUrl = ref<string | null>(null)
+const downloadFilename = ref("reframe-export.mp4")
+
+// Quality Options
+const quality = ref('high')
+const muteAudio = ref(false)
 
 // Calculate crop box size based on preset and video aspect ratio
 const initializeCropBox = () => {
@@ -164,6 +169,8 @@ const exportVideo = async () => {
   formData.append('y', realY.toString())
   formData.append('width', realW.toString())
   formData.append('height', realH.toString())
+  formData.append('quality', quality.value)
+  formData.append('muteAudio', muteAudio.value.toString())
   
   try {
     const response = await fetch('/api/process', {
@@ -188,7 +195,12 @@ const exportVideo = async () => {
       }
       if (msg.status === 'completed') {
         ws.close()
-        downloadUrl.value = `/api/download/${jobId}`
+        
+        const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
+        const ratio = selectedPreset.value.label.split(' ')[0].replace(':', 'x');
+        downloadFilename.value = `reframe_${origName}_${ratio}.mp4`;
+        
+        downloadUrl.value = `/api/download/${jobId}?filename=${encodeURIComponent(downloadFilename.value)}`
         isExporting.value = false
         progress.value = 100
       }
@@ -253,11 +265,26 @@ onMounted(() => {
         </button>
       </div>
       
+      <div class="options-section">
+        <label class="option-label">
+          <span>Qualität</span>
+          <select v-model="quality" class="input-select" :disabled="isExporting">
+            <option value="high">Hoch (Langsam, große Datei)</option>
+            <option value="medium">Mittel (Schnell, kleine Datei)</option>
+          </select>
+        </label>
+        
+        <label class="option-label checkbox-label">
+          <input type="checkbox" v-model="muteAudio" :disabled="isExporting" />
+          <span>Audio stummschalten</span>
+        </label>
+      </div>
+      
       <div class="export-area">
         <button v-if="!downloadUrl" class="btn btn-export" @click="exportVideo" :disabled="isExporting">
           {{ isExporting ? 'Verarbeite...' : 'Zuschneiden & Exportieren' }}
         </button>
-        <a v-if="downloadUrl" :href="downloadUrl" download="reframe-export.mp4" class="btn btn-success">
+        <a v-if="downloadUrl" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
           Video Herunterladen 📥
         </a>
         <button class="btn btn-secondary" @click="emit('reset')" :disabled="isExporting">
@@ -326,18 +353,7 @@ onMounted(() => {
   cursor: grabbing;
 }
 
-/* Corner markers */
-.crop-box::after, .crop-box::before {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid white;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.crop-box::before { top: -6px; left: -6px; }
-.crop-box::after { bottom: -6px; right: -6px; }
+/* Corner markers removed as requested */
 
 .controls-section {
   flex: 1;
@@ -383,6 +399,39 @@ onMounted(() => {
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--bg-tertiary);
+}
+
+.options-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.input-select {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  outline: none;
+}
+.input-select:focus {
+  border-color: var(--accent);
 }
 
 .btn-success {
