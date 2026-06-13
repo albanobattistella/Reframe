@@ -64,7 +64,7 @@ def get_video_dimensions(filepath: str) -> tuple[int, int]:
     except Exception:
         return 1920, 1080
 
-def create_text_image(t_item: dict, output_path: str, cw: int) -> int:
+def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int]:
     try:
         content = t_item.get("content", "")
         color = t_item.get("color", "#ffffff")
@@ -82,19 +82,19 @@ def create_text_image(t_item: dict, output_path: str, cw: int) -> int:
         
         font_name = t_item.get("font", "Arial")
         font_map = {
-            "Fira Code": "FiraCode-Regular.ttf",
-            "Arial": "LiberationSans-Regular.ttf",
-            "Verdana": "LiberationSans-Regular.ttf",
-            "Tahoma": "LiberationSans-Regular.ttf",
-            "Inter": "LiberationSans-Regular.ttf"
+            "Fira Code": "/usr/share/fonts/truetype/firacode/FiraCode-Regular.ttf",
+            "Arial": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "Verdana": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "Tahoma": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "Inter": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
         }
-        font_file = font_map.get(font_name, "LiberationSans-Regular.ttf")
+        font_file = font_map.get(font_name, "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf")
         
         try:
             font = ImageFont.truetype(font_file, font_size)
         except:
             try:
-                font = ImageFont.truetype("DejaVuSans.ttf", font_size)
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
             except:
                 font = ImageFont.load_default()
                 
@@ -115,12 +115,12 @@ def create_text_image(t_item: dict, output_path: str, cw: int) -> int:
             img = Image.new('RGBA', (10, 10), (255, 255, 255, 0))
             
         img.save(output_path)
-        return img.width
+        return img.width, img.height
     except Exception as e:
         print(f"Error creating text image: {e}")
         img = Image.new('RGBA', (10, 10), (255, 255, 255, 0))
         img.save(output_path)
-        return 10
+        return 10, 10
 
 async def process_video_ffmpeg(
     job_id: str, 
@@ -439,9 +439,18 @@ async def automate_process(
             with open(logo_path, "wb") as f:
                 f.write(img_data)
                 
+            try:
+                with Image.open(logo_path) as im:
+                    im_w, im_h = im.size
+                logo_w = int(150 * w.get("relativeScale", 0) * cw)
+                logo_h = int(logo_w * (im_h / im_w)) if im_w > 0 else logo_w
+            except:
+                logo_w = int(150 * w.get("relativeScale", 0) * cw)
+                logo_h = None
+                
             logo_paths.append(logo_path)
-            logoWs.append(int(150 * w.get("relativeScale", 0) * cw))
-            logoHs.append(None)
+            logoWs.append(logo_w)
+            logoHs.append(logo_h)
             logoXs.append(int(w.get("relativeX", 0) * cw))
             logoYs.append(int(w.get("relativeY", 0) * cw))
             logoRotations.append(w.get("rotation", 0))
@@ -451,10 +460,10 @@ async def automate_process(
     for i, t in enumerate(settings.get("texts", [])):
         if t.get("content"):
             text_path = os.path.join(UPLOAD_DIR, f"{job_id}_text_{i}.png")
-            img_width = create_text_image(t, text_path, cw)
+            img_w, img_h = create_text_image(t, text_path, cw)
             text_paths.append(text_path)
-            textWs.append(img_width)
-            textHs.append(None)
+            textWs.append(img_w)
+            textHs.append(img_h)
             textXs.append(int(t.get("relativeX", 0) * cw))
             textYs.append(int(t.get("relativeY", 0) * cw))
             textRotations.append(t.get("rotation", 0))
