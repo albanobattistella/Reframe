@@ -82,6 +82,7 @@ const logoX = ref(10)
 const logoY = ref(10)
 const logoRotation = ref(0)
 const logoScale = ref(1)
+const logoOpacity = ref(100)
 
 const handleLogoUpload = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -92,6 +93,7 @@ const handleLogoUpload = (e: Event) => {
     logoY.value = 10
     logoRotation.value = 0
     logoScale.value = 1
+    logoOpacity.value = 100
   }
 }
 
@@ -99,6 +101,7 @@ const clearLogo = () => {
   if (logoUrl.value) URL.revokeObjectURL(logoUrl.value)
   logoFile.value = null
   logoUrl.value = null
+  logoOpacity.value = 100
 }
 
 // Calculate crop box size based on preset and video aspect ratio
@@ -337,6 +340,7 @@ const exportVideo = async () => {
     formData.append('logoY', realLogoY.toString())
     formData.append('logoW', realLogoW.toString())
     formData.append('logoRotation', logoRotation.value.toString())
+    formData.append('logoOpacity', logoOpacity.value.toString())
   }
   
   try {
@@ -425,7 +429,8 @@ onMounted(() => {
               left: `${logoX}px`,
               top: `${logoY}px`,
               width: `${150 * logoScale}px`,
-              transform: `rotate(${logoRotation}deg)`
+              transform: `rotate(${logoRotation}deg)`,
+              opacity: logoOpacity / 100
             }"
             @mousedown="startLogoDrag"
           >
@@ -472,6 +477,11 @@ onMounted(() => {
             <span>Sek.</span>
           </div>
           <div class="range-slider-container">
+            <div class="slider-track-bg"></div>
+            <div class="slider-track-fill" :style="{
+              left: `${(trimStart / videoDuration) * 100}%`,
+              width: `${((trimEnd - trimStart) / videoDuration) * 100}%`
+            }"></div>
             <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimStart" class="range-slider" />
             <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimEnd" class="range-slider" />
           </div>
@@ -487,6 +497,10 @@ onMounted(() => {
               <label>
                 Größe:
                 <input type="range" min="0.2" max="3" step="0.1" v-model.number="logoScale" />
+              </label>
+              <label>
+                Deckkraft:
+                <input type="range" min="0" max="100" step="1" v-model.number="logoOpacity" />
               </label>
               <button class="btn btn-secondary btn-sm" @click="clearLogo">Entfernen</button>
             </div>
@@ -763,14 +777,27 @@ onMounted(() => {
   box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
-.range-slider:nth-child(1)::-webkit-slider-runnable-track {
+.slider-track-bg {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   width: 100%;
   height: 4px;
-  background: var(--glass-border);
+  background: var(--bg-tertiary);
   border-radius: 2px;
 }
 
-.range-slider:nth-child(2)::-webkit-slider-runnable-track {
+.slider-track-fill {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.1s, left 0.1s;
+}
+
+.range-slider::-webkit-slider-runnable-track {
   background: transparent;
 }
 

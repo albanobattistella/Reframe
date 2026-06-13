@@ -59,7 +59,8 @@ async def process_video_ffmpeg(
     logoX: int = None,
     logoY: int = None,
     logoW: int = None,
-    logoRotation: float = None
+    logoRotation: float = None,
+    logoOpacity: int = 100
 ):
     duration = get_video_duration(input_path)
     if trimStart is not None and trimEnd is not None:
@@ -84,9 +85,12 @@ async def process_video_ffmpeg(
     if logo_path:
         cmd.extend(["-i", logo_path])
         rotation_expr = f"{logoRotation}*PI/180" if logoRotation else "0"
+        opacity_val = logoOpacity / 100.0 if logoOpacity is not None else 1.0
+        opacity_filter = f",format=rgba,colorchannelmixer=aa={opacity_val}" if opacity_val < 1.0 else ""
+        
         filter_str = (
             f"[0:v]crop={w}:{h}:{x}:{y}[bg]; "
-            f"[1:v]scale={logoW}:-1[l_scaled]; "
+            f"[1:v]scale={logoW}:-1{opacity_filter}[l_scaled]; "
             f"[l_scaled]rotate={rotation_expr}:c=none[l_rotated]; "
             f"[bg][l_rotated]overlay={logoX}:{logoY}[outv]"
         )
@@ -169,7 +173,8 @@ async def process_video(
     logoX: int = Form(None),
     logoY: int = Form(None),
     logoW: int = Form(None),
-    logoRotation: float = Form(None)
+    logoRotation: float = Form(None),
+    logoOpacity: int = Form(100)
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -195,7 +200,7 @@ async def process_video(
     asyncio.create_task(process_video_ffmpeg(
         job_id, input_path, output_path, 
         x, y, width, height, quality, muteAudio,
-        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoRotation
+        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoRotation, logoOpacity
     ))
     
     return {"job_id": job_id}
