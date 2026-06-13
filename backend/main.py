@@ -25,10 +25,12 @@ app.add_middleware(
 # Paths
 UPLOAD_DIR = "/app/uploads" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "uploads")
 EXPORT_DIR = "/app/exports" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "exports")
+FONTS_DIR = "/app/fonts" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "fonts")
 FRONTEND_DIR = "/app/frontend" if os.environ.get("DOCKER") else os.path.join(os.path.dirname(os.getcwd()), "frontend", "dist")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
+os.makedirs(FONTS_DIR, exist_ok=True)
 
 # State stores
 job_progress: Dict[str, int] = {}
@@ -89,7 +91,18 @@ def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int
             "Tahoma": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
             "Inter": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
         }
-        font_file = font_map.get(font_name, "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf")
+        
+        custom_font_path = None
+        if os.path.exists(FONTS_DIR):
+            for f in os.listdir(FONTS_DIR):
+                if os.path.splitext(f)[0] == font_name:
+                    custom_font_path = os.path.join(FONTS_DIR, f)
+                    break
+        
+        if custom_font_path and os.path.exists(custom_font_path):
+            font_file = custom_font_path
+        else:
+            font_file = font_map.get(font_name, "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf")
         
         try:
             font = ImageFont.truetype(font_file, font_size)
@@ -602,6 +615,60 @@ async def delete_all_media(folder: str):
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"Failed to delete files: {str(e)}"})
     return JSONResponse(status_code=404, content={"detail": "Folder not found"})
+
+@app.get("/api/fonts")
+async def list_fonts():
+    fonts = ["Fira Code", "Arial", "Verdana", "Tahoma", "Inter"]
+    custom_fonts = []
+    if os.path.exists(FONTS_DIR):
+        for f in os.listdir(FONTS_DIR):
+            if f.lower().endswith(('.ttf', '.otf')):
+                font_name = os.path.splitext(f)[0]
+                if font_name not in fonts:
+                    custom_fonts.append(font_name)
+    
+    return {"static": fonts, "custom": custom_fonts}
+
+@app.post("/api/fonts")
+async def upload_font(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(('.ttf', '.otf')):
+        return JSONResponse(status_code=400, content={"detail": "Only .ttf and .otf files are allowed"})
+        
+    font_path = os.path.join(FONTS_DIR, file.filename)
+    content = await file.read()
+    with open(font_path, "wb") as f:
+        f.write(content)
+        
+    return {"status": "success", "font": os.path.splitext(file.filename)[0]}
+
+@app.get("/api/fonts/{font_name}/file")
+async def get_font_file(font_name: str):
+    font_map = {
+        "Fira Code": "/usr/share/fonts/truetype/firacode/FiraCode-Regular.ttf",
+        "Arial": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "Verdana": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "Tahoma": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "Inter": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+    }
+    
+    if os.path.exists(FONTS_DIR):
+        for f in os.listdir(FONTS_DIR):
+            if os.path.splitext(f)[0] == font_name:
+                return FileResponse(os.path.join(FONTS_DIR, f))
+                
+    if font_name in font_map and os.path.exists(font_map[font_name]):
+        return FileResponse(font_map[font_name])
+        
+    return JSONResponse(status_code=404, content={"detail": "Font file not found"})
+
+@app.delete("/api/fonts/{font_name}")
+async def delete_font(font_name: str):
+    if os.path.exists(FONTS_DIR):
+        for f in os.listdir(FONTS_DIR):
+            if os.path.splitext(f)[0] == font_name:
+                os.remove(os.path.join(FONTS_DIR, f))
+                return {"status": "success"}
+    return JSONResponse(status_code=404, content={"detail": "Font not found"})
 
 # Try to serve frontend statically if the directory exists
 # This is useful for production (Docker)

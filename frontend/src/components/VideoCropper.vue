@@ -111,7 +111,7 @@ const texts = ref<any[]>([])
 const addText = () => {
   texts.value.push({
     content: '',
-    font: 'Fira Code',
+    font: fonts.value.length > 0 ? fonts.value[0] : 'Fira Code',
     color: '#ffffff',
     shadow: true,
     x: 50,
@@ -125,23 +125,39 @@ const removeText = (index: number) => {
   texts.value.splice(index, 1)
 }
 
-const fonts = [
-  'Fira Code', 
-  'Inter', 
-  'Arial', 
-  'Verdana', 
-  'Tahoma', 
-  'Trebuchet MS', 
-  'Times New Roman', 
-  'Georgia', 
-  'Garamond', 
-  'Courier New', 
-  'Brush Script MT', 
-  'Comic Sans MS', 
-  'Impact', 
-  'Palatino Linotype', 
+const fonts = ref<string[]>([
+  'Fira Code', 'Inter', 'Arial', 'Verdana', 'Tahoma', 'Trebuchet MS', 
+  'Times New Roman', 'Georgia', 'Garamond', 'Courier New', 
+  'Brush Script MT', 'Comic Sans MS', 'Impact', 'Palatino Linotype', 
   'Lucida Sans Unicode'
-]
+])
+
+const fetchFonts = async () => {
+  try {
+    const response = await fetch('/api/fonts')
+    const data = await response.json()
+    if (data.static || data.custom) {
+      const newFonts = [...(data.static || []), ...(data.custom || [])]
+      fonts.value = newFonts
+      
+      // Load custom fonts into the browser so the canvas can render them
+      for (const fontName of data.custom || []) {
+        const isLoaded = Array.from(document.fonts).some(f => f.family === fontName)
+        if (!isLoaded) {
+          try {
+            const font = new FontFace(fontName, `url(/api/fonts/${encodeURIComponent(fontName)}/file)`)
+            await font.load()
+            document.fonts.add(font)
+          } catch (err) {
+            console.error(`Failed to load font ${fontName}:`, err)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching fonts:', error)
+  }
+}
 
 // Calculate crop box size based on preset and video aspect ratio
 const initializeCropBox = () => {
@@ -669,6 +685,8 @@ const applySettings = (settings: any, options?: any) => {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
+  fetchFonts()
+  window.addEventListener('fonts-updated', fetchFonts)
   if (containerRef.value) {
     resizeObserver = new ResizeObserver(() => {
       initializeCropBox()
@@ -678,6 +696,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('fonts-updated', fetchFonts)
   if (resizeObserver) {
     resizeObserver.disconnect()
   }

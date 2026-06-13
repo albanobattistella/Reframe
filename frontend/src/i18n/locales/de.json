@@ -78,5 +78,15 @@
     "delete_success": "Datei erfolgreich gelöscht",
     "delete_error": "Fehler beim Löschen der Datei",
     "delete_all": "Alle löschen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "fonts_category": "Schriftarten",
+    "general_category": "Allgemein",
+    "upload_font": "Schriftart hochladen",
+    "delete": "Löschen",
+    "no_fonts": "Keine benutzerdefinierten Schriftarten hochgeladen.",
+    "upload_success": "Schriftart erfolgreich hochgeladen",
+    "upload_error": "Fehler beim Hochladen der Schriftart"
   }
 }

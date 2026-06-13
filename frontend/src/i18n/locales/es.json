@@ -78,5 +78,15 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "error_import": "Error al importar el archivo de configuración."
+  },
+  "settings": {
+    "title": "Ajustes",
+    "fonts_category": "Fuentes",
+    "general_category": "General",
+    "upload_font": "Subir Fuente",
+    "delete": "Eliminar",
+    "no_fonts": "No hay fuentes personalizadas subidas.",
+    "upload_success": "Fuente subida exitosamente",
+    "upload_error": "Error al subir la fuente"
   }
 }

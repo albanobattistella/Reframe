@@ -6,8 +6,10 @@ import BatchProcessor from './components/BatchProcessor.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import MediaManager from './components/MediaManager.vue'
+import SettingsMenu from './components/SettingsMenu.vue'
 
 const currentView = ref<'home' | 'media'>('home')
+const showSettings = ref(false)
 const videoFiles = ref<{url: string, file: File}[]>([])
 
 const handleVideoUpload = (files: {url: string, file: File}[]) => {
@@ -20,6 +22,25 @@ const handleReset = () => {
   })
   videoFiles.value = []
 }
+
+const showWallets = ref(false)
+const copiedWallet = ref<string | null>(null)
+
+const copyWallet = async (name: string, address: string) => {
+  try {
+    await navigator.clipboard.writeText(address)
+    copiedWallet.value = name
+    setTimeout(() => {
+      copiedWallet.value = null
+    }, 2000)
+  } catch (err) {
+    console.error('Failed to copy text: ', err)
+  }
+}
+
+const handleFontsUpdated = () => {
+  window.dispatchEvent(new Event('fonts-updated'))
+}
 </script>
 
 <template>
@@ -30,9 +51,20 @@ const handleReset = () => {
     >
       {{ currentView === 'home' ? $t('media_manager.button') : $t('app.title') }}
     </button>
+    <button class="btn secondary small btn-icon" @click="showSettings = true" title="Settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
     <ThemeToggle />
     <LanguageSwitcher />
   </div>
+  <SettingsMenu 
+    v-if="showSettings" 
+    @close="showSettings = false" 
+    @fonts-updated="handleFontsUpdated" 
+  />
   <header class="header" v-if="currentView === 'home'">
     <h1 class="text-gradient">{{ $t('app.title') }}</h1>
     <p>{{ $t('app.subtitle') }}</p>
@@ -77,6 +109,31 @@ const handleReset = () => {
             <line x1="14" y1="2" x2="14" y2="4"/>
           </svg>
         </a>
+        <div class="wallet-wrapper" @mouseleave="showWallets = false">
+          <button class="social-link wallet-btn" @click="showWallets = !showWallets" @mouseenter="showWallets = true" title="Crypto Donation">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+              <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+            </svg>
+          </button>
+          <Transition name="fade">
+            <div class="wallet-dropdown glass" v-if="showWallets">
+              <div class="wallet-item" @click="copyWallet('BTC', 'bc1qytee2a0z2tg4k4zdtqj08zpellkrecrgdgg36z')" title="Copy BTC Address">
+                <span class="wallet-label">BTC</span>
+                <span class="wallet-address">{{ copiedWallet === 'BTC' ? 'Copied!' : 'bc1q...36z' }}</span>
+              </div>
+              <div class="wallet-item" @click="copyWallet('ETH', '0x49372575383aEA56b78524C4FD0873DE1175e9be')" title="Copy ETH Address">
+                <span class="wallet-label">ETH</span>
+                <span class="wallet-address">{{ copiedWallet === 'ETH' ? 'Copied!' : '0x49...9be' }}</span>
+              </div>
+              <div class="wallet-item" @click="copyWallet('LTC', 'ltc1qk2pe4srtcjt2cnnp5fcfvmknwckjus9ge8v5p9')" title="Copy LTC Address">
+                <span class="wallet-label">LTC</span>
+                <span class="wallet-address">{{ copiedWallet === 'LTC' ? 'Copied!' : 'ltc1...v5p9' }}</span>
+              </div>
+            </div>
+          </Transition>
+        </div>
       </div>
     </div>
   </footer>
@@ -91,6 +148,13 @@ const handleReset = () => {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header {
@@ -173,5 +237,93 @@ const handleReset = () => {
 .social-link:hover {
   color: var(--accent) !important;
   transform: translateY(-2px);
+}
+
+.wallet-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wallet-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.wallet-dropdown {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 15px;
+  right: -10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 190px;
+  z-index: 50;
+}
+
+.wallet-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 15px;
+}
+
+.wallet-dropdown::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-right: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  transform: rotate(45deg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.wallet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.wallet-item:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.wallet-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wallet-address {
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>

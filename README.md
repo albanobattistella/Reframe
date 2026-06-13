@@ -19,6 +19,7 @@ The ultimate self-hosted video toolkit for content creators and social media man
 * **CLI API for Scripting**: Seamlessly integrate Reframe into your automated workflows. Use the `/api/automate` REST endpoint to process videos programmatically using JSON configurations and scripts.
 * **Format Export & Import**: Dialed in the perfect settings? Export your configuration as a preset file and import it later so you don't have to start from scratch.
 * **Built-in Asset Browser**: Manage, view, and bulk-delete your uploaded media and exported videos right within the app using the integrated asset browser.
+* **Custom Fonts Integration**: Upload your own `.ttf` and `.otf` fonts directly from the UI and use them seamlessly in your videos.
 * **Watermarks & Overlays**: Add your custom logo or watermark. You can also add custom text overlays with adjustable fonts, colors, and drop shadows!
 * **Video Trimming**: Precisely trim the start and end times of your videos.
 * **Hardware Acceleration (GPU)**: Leverage hardware acceleration for blazing-fast exports.
@@ -55,6 +56,7 @@ services:
     volumes:
       - ./media/uploads:/app/uploads
       - ./media/exports:/app/exports
+      - ./media/fonts:/app/fonts
     restart: unless-stopped
 ```
 

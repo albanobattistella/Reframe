@@ -78,5 +78,15 @@
     "delete_success": "File deleted successfully",
     "delete_error": "Failed to delete file",
     "delete_all": "Delete All"
+  },
+  "settings": {
+    "title": "Settings",
+    "fonts_category": "Fonts",
+    "general_category": "General",
+    "upload_font": "Upload Font",
+    "delete": "Delete",
+    "no_fonts": "No custom fonts uploaded.",
+    "upload_success": "Font uploaded successfully",
+    "upload_error": "Failed to upload font"
   }
 }
