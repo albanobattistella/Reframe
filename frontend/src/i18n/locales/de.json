@@ -19,7 +19,7 @@
     "format_title": "Format wählen",
     "width": "Breite:",
     "height": "Höhe:",
-    "advanced_options": "🔧 Erweiterte Optionen (Trimmen, Logo)",
+    "advanced_options": "🔧 Erweiterte Optionen (Trimmen, Logo, Text)",
     "trim_video": "Video Trimmen",
     "to": "bis",
     "sec": "Sek.",
@@ -37,7 +37,14 @@
     "download": "Video herunterladen 📥",
     "choose_new": "Neues Video wählen",
     "error_export": "Fehler beim Exportieren.",
-    "error_occurred": "Ein Fehler ist aufgetreten: "
+    "error_occurred": "Ein Fehler ist aufgetreten: ",
+    "text_overlay": "Text-Overlay",
+    "text_content": "Textinhalt",
+    "text_font": "Schriftart",
+    "text_color": "Textfarbe",
+    "text_shadow": "Schlagschatten",
+    "text_add": "Text hinzufügen",
+    "text_remove": "Text entfernen"
   },
   "batch": {
     "title": "Stapelverarbeitung",

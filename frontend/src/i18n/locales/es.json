@@ -19,7 +19,7 @@
     "format_title": "Seleccionar formato",
     "width": "Ancho:",
     "height": "Alto:",
-    "advanced_options": "🔧 Opciones avanzadas (Recortar, Logo)",
+    "advanced_options": "🔧 Opciones Avanzadas (Recortar, Logo, Texto)",
     "trim_video": "Recortar vídeo",
     "to": "a",
     "sec": "seg",
@@ -37,6 +37,13 @@
     "download": "Descargar último vídeo 📥",
     "choose_new": "Elegir nuevo vídeo",
     "error_export": "Error al exportar.",
-    "error_occurred": "Ha ocurrido un error: "
+    "error_occurred": "Ocurrió un error: ",
+    "text_overlay": "Superposición de texto",
+    "text_content": "Contenido del texto",
+    "text_font": "Fuente",
+    "text_color": "Color del texto",
+    "text_shadow": "Sombra",
+    "text_add": "Añadir Texto",
+    "text_remove": "Quitar Texto"
   }
 }

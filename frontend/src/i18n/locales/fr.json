@@ -19,7 +19,7 @@
     "format_title": "Sélectionner le format",
     "width": "Largeur :",
     "height": "Hauteur :",
-    "advanced_options": "🔧 Options avancées (Couper, Logo)",
+    "advanced_options": "🔧 Options avancées (Couper, Logo, Texte)",
     "trim_video": "Couper la vidéo",
     "to": "à",
     "sec": "sec",
@@ -37,7 +37,14 @@
     "download": "Télécharger la vidéo 📥",
     "choose_new": "Choisir une nouvelle vidéo",
     "error_export": "Erreur lors de l'exportation.",
-    "error_occurred": "Une erreur est survenue : "
+    "error_occurred": "Une erreur s'est produite : ",
+    "text_overlay": "Superposition de texte",
+    "text_content": "Contenu du texte",
+    "text_font": "Police",
+    "text_color": "Couleur du texte",
+    "text_shadow": "Ombre portée",
+    "text_add": "Ajouter du texte",
+    "text_remove": "Supprimer le texte"
   },
   "batch": {
     "title": "Traitement par lots",

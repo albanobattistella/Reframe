@@ -61,7 +61,13 @@ async def process_video_ffmpeg(
     logoW: int = None,
     logoH: int = None,
     logoRotation: float = None,
-    logoOpacity: int = 100
+    logoOpacity: int = 100,
+    text_path: str = None,
+    textX: int = None,
+    textY: int = None,
+    textW: int = None,
+    textH: int = None,
+    textRotation: float = None
 ):
     duration = get_video_duration(input_path)
     if trimStart is not None and trimEnd is not None:
@@ -83,6 +89,10 @@ async def process_video_ffmpeg(
         
     cmd.extend(["-i", input_path])
     
+    filters = [f"[0:v]crop={w}:{h}:{x}:{y}[bg]"]
+    current_bg = "[bg]"
+    input_idx = 1
+    
     if logo_path:
         cmd.extend(["-i", logo_path])
         rotation_expr = f"{logoRotation}*PI/180" if logoRotation else "0"
@@ -96,13 +106,32 @@ async def process_video_ffmpeg(
             rotate_filter = f"rotate={rotation_expr}:c=none"
             overlay_expr = f"{logoX}:{logoY}"
             
-        filter_str = (
-            f"[0:v]crop={w}:{h}:{x}:{y}[bg]; "
-            f"[1:v]scale={logoW}:-1{opacity_filter}[l_scaled]; "
-            f"[l_scaled]{rotate_filter}[l_rotated]; "
-            f"[bg][l_rotated]overlay={overlay_expr}[outv]"
-        )
-        cmd.extend(["-filter_complex", filter_str, "-map", "[outv]"])
+        filters.append(f"[{input_idx}:v]scale={logoW}:-1{opacity_filter}[l_scaled]")
+        filters.append(f"[l_scaled]{rotate_filter}[l_rotated]")
+        filters.append(f"{current_bg}[l_rotated]overlay={overlay_expr}[bg_with_logo]")
+        current_bg = "[bg_with_logo]"
+        input_idx += 1
+        
+    if text_path:
+        cmd.extend(["-i", text_path])
+        rotation_expr = f"{textRotation}*PI/180" if textRotation else "0"
+        
+        if textH is not None:
+            rotate_filter = f"rotate={rotation_expr}:c=none:ow='hypot(iw,ih)':oh='hypot(iw,ih)'"
+            overlay_expr = f"{textX}+{textW}/2-w/2:{textY}+{textH}/2-h/2"
+        else:
+            rotate_filter = f"rotate={rotation_expr}:c=none"
+            overlay_expr = f"{textX}:{textY}"
+            
+        filters.append(f"[{input_idx}:v]scale={textW}:-1[t_scaled]")
+        filters.append(f"[t_scaled]{rotate_filter}[t_rotated]")
+        filters.append(f"{current_bg}[t_rotated]overlay={overlay_expr}[bg_with_text]")
+        current_bg = "[bg_with_text]"
+        input_idx += 1
+        
+    if current_bg != "[bg]":
+        filter_str = "; ".join(filters)
+        cmd.extend(["-filter_complex", filter_str, "-map", current_bg])
         if muteAudio != "true":
             cmd.extend(["-map", "0:a?"])
     else:
@@ -183,7 +212,13 @@ async def process_video(
     logoW: int = Form(None),
     logoH: int = Form(None),
     logoRotation: float = Form(None),
-    logoOpacity: int = Form(100)
+    logoOpacity: int = Form(100),
+    textFile: UploadFile = Form(None),
+    textX: int = Form(None),
+    textY: int = Form(None),
+    textW: int = Form(None),
+    textH: int = Form(None),
+    textRotation: float = Form(None)
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -203,13 +238,23 @@ async def process_video(
         with open(logo_path, "wb") as f:
             f.write(logo_content)
         
+    text_path = None
+    if textFile:
+        text_ext = os.path.splitext(textFile.filename)[1] or ".png" if textFile.filename else ".png"
+        text_filename = f"{job_id}_text{text_ext}"
+        text_path = os.path.join(UPLOAD_DIR, text_filename)
+        text_content = await textFile.read()
+        with open(text_path, "wb") as f:
+            f.write(text_content)
+        
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
     
     asyncio.create_task(process_video_ffmpeg(
         job_id, input_path, output_path, 
         x, y, width, height, quality, muteAudio,
-        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoH, logoRotation, logoOpacity
+        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoH, logoRotation, logoOpacity,
+        text_path, textX, textY, textW, textH, textRotation
     ))
     
     return {"job_id": job_id}

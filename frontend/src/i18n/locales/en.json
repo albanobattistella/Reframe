@@ -19,7 +19,7 @@
     "format_title": "Select Format",
     "width": "Width:",
     "height": "Height:",
-    "advanced_options": "🔧 Advanced Options (Trim, Logo)",
+    "advanced_options": "🔧 Advanced Options (Trim, Logo, Text)",
     "trim_video": "Trim Video",
     "to": "to",
     "sec": "sec",
@@ -37,7 +37,14 @@
     "download": "Download Video 📥",
     "choose_new": "Choose New Video",
     "error_export": "Error during export.",
-    "error_occurred": "An error occurred: "
+    "error_occurred": "An error occurred: ",
+    "text_overlay": "Text Overlay",
+    "text_content": "Text Content",
+    "text_font": "Font",
+    "text_color": "Text Color",
+    "text_shadow": "Drop Shadow",
+    "text_add": "Add Text",
+    "text_remove": "Remove Text"
   },
   "batch": {
     "title": "Batch Processing",

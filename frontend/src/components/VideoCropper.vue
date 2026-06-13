@@ -109,6 +109,28 @@ const clearLogo = () => {
   logoOpacity.value = 100
 }
 
+// Text Overlay State
+const showText = ref(false)
+const textContent = ref('')
+const textFont = ref('Fira Code')
+const textColor = ref('#ffffff')
+const textShadow = ref(true)
+const textX = ref(50)
+const textY = ref(50)
+const textRotation = ref(0)
+const textScale = ref(1)
+
+const clearText = () => {
+  showText.value = false
+  textContent.value = ''
+  textX.value = 50
+  textY.value = 50
+  textRotation.value = 0
+  textScale.value = 1
+}
+
+const fonts = ['Fira Code', 'Inter', 'Press Start 2P', 'Arial']
+
 // Calculate crop box size based on preset and video aspect ratio
 const initializeCropBox = () => {
   if (!videoRef.value || !containerRef.value) return
@@ -256,6 +278,38 @@ const endLogoDrag = () => {
   window.removeEventListener('mouseup', endLogoDrag)
 }
 
+// Text Drag Logic
+const isTextDragging = ref(false)
+const textDragStartX = ref(0)
+const textDragStartY = ref(0)
+const textDragStartLeft = ref(0)
+const textDragStartTop = ref(0)
+
+const startTextDrag = (e: MouseEvent) => {
+  e.stopPropagation()
+  isTextDragging.value = true
+  textDragStartX.value = e.clientX
+  textDragStartY.value = e.clientY
+  textDragStartLeft.value = textX.value
+  textDragStartTop.value = textY.value
+  window.addEventListener('mousemove', onTextDrag)
+  window.addEventListener('mouseup', endTextDrag)
+}
+
+const onTextDrag = (e: MouseEvent) => {
+  if (!isTextDragging.value) return
+  const dx = e.clientX - textDragStartX.value
+  const dy = e.clientY - textDragStartY.value
+  textX.value = textDragStartLeft.value + dx
+  textY.value = textDragStartTop.value + dy
+}
+
+const endTextDrag = () => {
+  isTextDragging.value = false
+  window.removeEventListener('mousemove', onTextDrag)
+  window.removeEventListener('mouseup', endTextDrag)
+}
+
 // Logo Rotate Logic
 const isRotating = ref(false)
 let rotationCenter = { x: 0, y: 0 }
@@ -293,6 +347,83 @@ const endRotate = () => {
   isRotating.value = false
   window.removeEventListener('mousemove', onRotate)
   window.removeEventListener('mouseup', endRotate)
+}
+
+// Text Rotate Logic
+const isTextRotating = ref(false)
+let textRotationCenter = { x: 0, y: 0 }
+let textStartAngle = 0
+let textStartRotation = 0
+
+const startTextRotate = (e: MouseEvent) => {
+  e.stopPropagation()
+  isTextRotating.value = true
+  
+  const textEl = document.getElementById('text-overlay')
+  if (textEl) {
+    const rect = textEl.getBoundingClientRect()
+    textRotationCenter = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    }
+  }
+  
+  textStartAngle = Math.atan2(e.clientY - textRotationCenter.y, e.clientX - textRotationCenter.x)
+  textStartRotation = textRotation.value
+  
+  window.addEventListener('mousemove', onTextRotate)
+  window.addEventListener('mouseup', endTextRotate)
+}
+
+const onTextRotate = (e: MouseEvent) => {
+  if (!isTextRotating.value) return
+  const currentAngle = Math.atan2(e.clientY - textRotationCenter.y, e.clientX - textRotationCenter.x)
+  let angleDiff = (currentAngle - textStartAngle) * (180 / Math.PI)
+  textRotation.value = textStartRotation + angleDiff
+}
+
+const endTextRotate = () => {
+  isTextRotating.value = false
+  window.removeEventListener('mousemove', onTextRotate)
+  window.removeEventListener('mouseup', endTextRotate)
+}
+
+const createTextFile = async (textEl: HTMLElement): Promise<File> => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  
+  const renderScale = 4
+  canvas.width = textEl.offsetWidth * renderScale
+  canvas.height = textEl.offsetHeight * renderScale
+  
+  const fontSize = (24 * textScale.value) * renderScale
+  
+  ctx.font = `bold ${fontSize}px "${textFont.value}"`
+  ctx.textBaseline = 'top'
+  ctx.textAlign = 'center'
+  
+  if (textShadow.value) {
+    ctx.shadowColor = 'rgba(0,0,0,0.8)'
+    ctx.shadowBlur = 4 * renderScale
+    ctx.shadowOffsetX = 2 * renderScale
+    ctx.shadowOffsetY = 2 * renderScale
+  }
+  
+  ctx.fillStyle = textColor.value
+  const lines = textContent.value.split('\n')
+  const lineHeight = fontSize * 1.2
+  
+  const paddingTop = 10 * renderScale
+  
+  lines.forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, paddingTop + i * lineHeight)
+  })
+  
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(new File([blob!], 'text.png', { type: 'image/png' }))
+    }, 'image/png')
+  })
 }
 
 const exportVideo = async (): Promise<void> => {
@@ -346,6 +477,24 @@ const exportVideo = async (): Promise<void> => {
     formData.append('logoH', realLogoH.toString())
     formData.append('logoRotation', logoRotation.value.toString())
     formData.append('logoOpacity', logoOpacity.value.toString())
+  }
+  
+  if (showText.value && textContent.value) {
+    const textEl = document.getElementById('text-overlay')
+    if (textEl) {
+      const textFile = await createTextFile(textEl)
+      const realTextW = Math.round(textEl.offsetWidth * scale)
+      const realTextH = Math.round(textEl.offsetHeight * scale)
+      const realTextX = Math.round(textX.value * scale)
+      const realTextY = Math.round(textY.value * scale)
+      
+      formData.append('textFile', textFile)
+      formData.append('textX', realTextX.toString())
+      formData.append('textY', realTextY.toString())
+      formData.append('textW', realTextW.toString())
+      formData.append('textH', realTextH.toString())
+      formData.append('textRotation', textRotation.value.toString())
+    }
   }
   
   return new Promise(async (resolve, reject) => {
@@ -415,7 +564,19 @@ const getSettings = () => ({
   logoOpacity: logoOpacity.value,
   logoRelativeX: boxWidth.value > 0 ? logoX.value / boxWidth.value : 0,
   logoRelativeY: boxHeight.value > 0 ? logoY.value / boxHeight.value : 0,
-  logoRelativeScale: boxWidth.value > 0 ? logoScale.value / boxWidth.value : 0
+  logoRelativeScale: boxWidth.value > 0 ? logoScale.value / boxWidth.value : 0,
+  
+  showText: showText.value,
+  textContent: textContent.value,
+  textFont: textFont.value,
+  textColor: textColor.value,
+  textShadow: textShadow.value,
+  textX: textX.value,
+  textY: textY.value,
+  textRotation: textRotation.value,
+  textScale: textScale.value,
+  textRelativeX: boxWidth.value > 0 ? textX.value / boxWidth.value : 0,
+  textRelativeY: boxHeight.value > 0 ? textY.value / boxHeight.value : 0
 })
 
 const applySettings = (settings: any) => {
@@ -458,6 +619,22 @@ const applySettings = (settings: any) => {
     logoX.value = settings.logoX
     logoY.value = settings.logoY
     logoScale.value = settings.logoScale
+  }
+  
+  showText.value = settings.showText || false
+  textContent.value = settings.textContent || ''
+  textFont.value = settings.textFont || 'Fira Code'
+  textColor.value = settings.textColor || '#ffffff'
+  textShadow.value = settings.textShadow !== undefined ? settings.textShadow : true
+  textRotation.value = settings.textRotation || 0
+  textScale.value = settings.textScale || 1
+  
+  if (settings.textRelativeX !== undefined && boxWidth.value > 0) {
+    textX.value = settings.textRelativeX * boxWidth.value
+    textY.value = settings.textRelativeY * boxHeight.value
+  } else {
+    textX.value = settings.textX || 50
+    textY.value = settings.textY || 50
   }
 }
 
@@ -526,6 +703,26 @@ defineExpose({
           >
             <img :src="logoUrl" alt="Watermark Logo" class="logo-img" />
             <div class="rotate-handle" @mousedown.stop="startRotate">↻</div>
+          </div>
+          
+          <!-- Text Overlay -->
+          <div 
+            v-if="showText && textContent"
+            id="text-overlay"
+            class="text-overlay"
+            :style="{
+              left: `${textX}px`,
+              top: `${textY}px`,
+              transform: `rotate(${textRotation}deg)`,
+              color: textColor,
+              fontFamily: textFont,
+              textShadow: textShadow ? '2px 2px 4px rgba(0,0,0,0.8)' : 'none',
+              fontSize: `${24 * textScale}px`
+            }"
+            @mousedown="startTextDrag"
+          >
+            <div class="text-content" style="white-space: pre-wrap; text-align: center; font-weight: bold; line-height: 1.2;">{{ textContent }}</div>
+            <div class="rotate-handle" @mousedown.stop="startTextRotate">↻</div>
           </div>
         </div>
       </div>
@@ -601,6 +798,35 @@ defineExpose({
                   <input type="range" min="0" max="100" step="1" v-model.number="logoOpacity" />
                 </label>
                 <button class="btn btn-secondary btn-sm" @click="clearLogo">{{ $t('cropper.remove') }}</button>
+              </div>
+            </div>
+          </label>
+        </div>
+        
+        <div class="options-section">
+          <label class="option-label">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span>{{ $t('cropper.text_overlay') }}</span>
+              <button class="btn btn-sm btn-secondary" v-if="!showText" @click="showText = true">{{ $t('cropper.text_add') }}</button>
+              <button class="btn btn-sm btn-secondary" v-if="showText" @click="clearText">{{ $t('cropper.text_remove') }}</button>
+            </div>
+            <div v-if="showText" class="text-controls" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%; margin-top: 0.5rem;">
+              <textarea v-model="textContent" :placeholder="$t('cropper.text_content')" class="input-text" rows="2"></textarea>
+              <div style="display: flex; gap: 0.5rem;">
+                <select v-model="textFont" class="input-select" style="flex: 1;">
+                  <option v-for="font in fonts" :key="font" :value="font">{{ font }}</option>
+                </select>
+                <input type="color" v-model="textColor" style="height: 38px; width: 50px; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
+              </div>
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <label style="flex: 1;">
+                  {{ $t('cropper.size') }}
+                  <input type="range" min="0.5" max="5" step="0.1" v-model.number="textScale" style="width: 100%;" />
+                </label>
+                <label class="checkbox-label" style="margin-top: 18px;">
+                  <input type="checkbox" v-model="textShadow" />
+                  <span>{{ $t('cropper.text_shadow') }}</span>
+                </label>
               </div>
             </div>
           </label>
@@ -766,6 +992,24 @@ defineExpose({
   pointer-events: none;
 }
 
+.text-overlay {
+  position: absolute;
+  cursor: move;
+  transform-origin: center center;
+  padding: 10px;
+  border: 1px dashed transparent;
+  width: max-content;
+  white-space: pre-wrap;
+}
+
+.text-overlay:hover {
+  border-color: rgba(255,255,255,0.5);
+}
+
+.text-overlay:active {
+  cursor: grabbing;
+}
+
 .rotate-handle {
   position: absolute;
   top: -25px;
@@ -798,6 +1042,17 @@ defineExpose({
 .file-input {
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+.input-text {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
 }
 
 .logo-controls {
