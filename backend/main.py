@@ -46,8 +46,25 @@ def get_video_duration(filepath: str) -> float:
     except Exception:
         return 0.0
 
-async def process_video_ffmpeg(job_id: str, input_path: str, output_path: str, x: int, y: int, w: int, h: int, quality: str, muteAudio: str):
+async def process_video_ffmpeg(
+    job_id: str, 
+    input_path: str, 
+    output_path: str, 
+    x: int, y: int, w: int, h: int, 
+    quality: str, 
+    muteAudio: str,
+    trimStart: float = None,
+    trimEnd: float = None,
+    logo_path: str = None,
+    logoX: int = None,
+    logoY: int = None,
+    logoW: int = None,
+    logoRotation: float = None
+):
     duration = get_video_duration(input_path)
+    if trimStart is not None and trimEnd is not None:
+        duration = trimEnd - trimStart
+        
     job_status[job_id] = "processing"
     job_progress[job_id] = 0
     
@@ -55,16 +72,38 @@ async def process_video_ffmpeg(job_id: str, input_path: str, output_path: str, x
     crf = "18" if quality == "high" else "23"
     preset = "slow" if quality == "high" else "fast"
     
-    # Audio settings
-    audio_args = ["-an"] if muteAudio == "true" else ["-c:a", "copy"]
+    cmd = ["ffmpeg", "-y"]
     
-    cmd = [
-        "ffmpeg", "-y", "-i", input_path,
-        "-vf", f"crop={w}:{h}:{x}:{y}",
-        "-c:v", "libx264", "-crf", crf, "-preset", preset,
-        *audio_args,
-        output_path
-    ]
+    if trimStart is not None and trimStart > 0:
+        cmd.extend(["-ss", str(trimStart)])
+    if trimEnd is not None and trimEnd > 0:
+        cmd.extend(["-to", str(trimEnd)])
+        
+    cmd.extend(["-i", input_path])
+    
+    if logo_path:
+        cmd.extend(["-i", logo_path])
+        rotation_expr = f"{logoRotation}*PI/180" if logoRotation else "0"
+        filter_str = (
+            f"[0:v]crop={w}:{h}:{x}:{y}[bg]; "
+            f"[1:v]scale={logoW}:-1[l_scaled]; "
+            f"[l_scaled]rotate={rotation_expr}:c=none:ow=rotw(a):oh=roth(a)[l_rotated]; "
+            f"[bg][l_rotated]overlay={logoX}:{logoY}[outv]"
+        )
+        cmd.extend(["-filter_complex", filter_str, "-map", "[outv]"])
+        if muteAudio != "true":
+            cmd.extend(["-map", "0:a?"])
+    else:
+        cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y}"])
+        
+    cmd.extend(["-c:v", "libx264", "-crf", crf, "-preset", preset])
+    
+    if muteAudio == "true":
+        cmd.append("-an")
+    else:
+        cmd.extend(["-c:a", "copy"])
+        
+    cmd.append(output_path)
     
     process = await asyncio.create_subprocess_exec(
         *cmd,
@@ -123,7 +162,14 @@ async def process_video(
     width: int = Form(...),
     height: int = Form(...),
     quality: str = Form("high"),
-    muteAudio: str = Form("false")
+    muteAudio: str = Form("false"),
+    trimStart: float = Form(None),
+    trimEnd: float = Form(None),
+    logoFile: UploadFile = Form(None),
+    logoX: int = Form(None),
+    logoY: int = Form(None),
+    logoW: int = Form(None),
+    logoRotation: float = Form(None)
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -134,10 +180,23 @@ async def process_video(
     with open(input_path, "wb") as f:
         f.write(content)
         
+    logo_path = None
+    if logoFile:
+        logo_ext = os.path.splitext(logoFile.filename)[1] or ".png" if logoFile.filename else ".png"
+        logo_filename = f"{job_id}_logo{logo_ext}"
+        logo_path = os.path.join(UPLOAD_DIR, logo_filename)
+        logo_content = await logoFile.read()
+        with open(logo_path, "wb") as f:
+            f.write(logo_content)
+        
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
     
-    asyncio.create_task(process_video_ffmpeg(job_id, input_path, output_path, x, y, width, height, quality, muteAudio))
+    asyncio.create_task(process_video_ffmpeg(
+        job_id, input_path, output_path, 
+        x, y, width, height, quality, muteAudio,
+        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoRotation
+    ))
     
     return {"job_id": job_id}
 

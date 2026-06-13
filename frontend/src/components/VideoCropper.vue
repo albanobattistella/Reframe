@@ -47,6 +47,25 @@ const displayedH = ref(0)
 const offsetX = ref(0)
 const offsetY = ref(0)
 
+// Trimming State
+const videoDuration = ref(0)
+const trimStart = ref(0)
+const trimEnd = ref(0)
+
+watch([trimStart, trimEnd], ([newStart, newEnd]) => {
+  if (newStart < 0) trimStart.value = 0
+  if (newEnd > videoDuration.value) trimEnd.value = videoDuration.value
+  
+  if (newStart > newEnd) {
+    // Prevent overlapping
+    trimStart.value = newEnd - 0.1
+  }
+  
+  if (videoRef.value && Math.abs(videoRef.value.currentTime - newStart) > 0.5) {
+     videoRef.value.currentTime = newStart
+  }
+})
+
 const isExporting = ref(false)
 const progress = ref(0)
 const downloadUrl = ref<string | null>(null)
@@ -55,6 +74,32 @@ const downloadFilename = ref("reframe-export.mp4")
 // Quality Options
 const quality = ref('high')
 const muteAudio = ref(false)
+
+// Logo State
+const logoFile = ref<File | null>(null)
+const logoUrl = ref<string | null>(null)
+const logoX = ref(10)
+const logoY = ref(10)
+const logoRotation = ref(0)
+const logoScale = ref(1)
+
+const handleLogoUpload = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    logoFile.value = target.files[0]
+    logoUrl.value = URL.createObjectURL(logoFile.value)
+    logoX.value = 10
+    logoY.value = 10
+    logoRotation.value = 0
+    logoScale.value = 1
+  }
+}
+
+const clearLogo = () => {
+  if (logoUrl.value) URL.revokeObjectURL(logoUrl.value)
+  logoFile.value = null
+  logoUrl.value = null
+}
 
 // Calculate crop box size based on preset and video aspect ratio
 const initializeCropBox = () => {
@@ -110,6 +155,10 @@ const initializeCropBox = () => {
 }
 
 const onVideoLoaded = () => {
+  if (videoRef.value) {
+    videoDuration.value = videoRef.value.duration
+    trimEnd.value = videoRef.value.duration
+  }
   initializeCropBox()
 }
 
@@ -167,6 +216,77 @@ const endDrag = () => {
   window.removeEventListener('mouseup', endDrag)
 }
 
+// Logo Drag Logic
+const isLogoDragging = ref(false)
+const logoDragStartX = ref(0)
+const logoDragStartY = ref(0)
+const logoDragStartLeft = ref(0)
+const logoDragStartTop = ref(0)
+
+const startLogoDrag = (e: MouseEvent) => {
+  e.stopPropagation()
+  isLogoDragging.value = true
+  logoDragStartX.value = e.clientX
+  logoDragStartY.value = e.clientY
+  logoDragStartLeft.value = logoX.value
+  logoDragStartTop.value = logoY.value
+  window.addEventListener('mousemove', onLogoDrag)
+  window.addEventListener('mouseup', endLogoDrag)
+}
+
+const onLogoDrag = (e: MouseEvent) => {
+  if (!isLogoDragging.value) return
+  const dx = e.clientX - logoDragStartX.value
+  const dy = e.clientY - logoDragStartY.value
+  logoX.value = logoDragStartLeft.value + dx
+  logoY.value = logoDragStartTop.value + dy
+}
+
+const endLogoDrag = () => {
+  isLogoDragging.value = false
+  window.removeEventListener('mousemove', onLogoDrag)
+  window.removeEventListener('mouseup', endLogoDrag)
+}
+
+// Logo Rotate Logic
+const isRotating = ref(false)
+let rotationCenter = { x: 0, y: 0 }
+let startAngle = 0
+let startRotation = 0
+
+const startRotate = (e: MouseEvent) => {
+  e.stopPropagation()
+  isRotating.value = true
+  
+  const logoEl = document.getElementById('logo-overlay')
+  if (logoEl) {
+    const rect = logoEl.getBoundingClientRect()
+    rotationCenter = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    }
+  }
+  
+  startAngle = Math.atan2(e.clientY - rotationCenter.y, e.clientX - rotationCenter.x)
+  startRotation = logoRotation.value
+  
+  window.addEventListener('mousemove', onRotate)
+  window.addEventListener('mouseup', endRotate)
+}
+
+const onRotate = (e: MouseEvent) => {
+  if (!isRotating.value) return
+  const currentAngle = Math.atan2(e.clientY - rotationCenter.y, e.clientX - rotationCenter.x)
+  let angleDiff = (currentAngle - startAngle) * (180 / Math.PI)
+  logoRotation.value = startRotation + angleDiff
+}
+
+const endRotate = () => {
+  isRotating.value = false
+  window.removeEventListener('mousemove', onRotate)
+  window.removeEventListener('mouseup', endRotate)
+}
+
 const exportVideo = async () => {
   if (!videoRef.value || !containerRef.value) return
   
@@ -196,8 +316,28 @@ const exportVideo = async () => {
   formData.append('y', realY.toString())
   formData.append('width', realW.toString())
   formData.append('height', realH.toString())
+  formData.append('trimStart', trimStart.value.toString())
+  formData.append('trimEnd', trimEnd.value.toString())
   formData.append('quality', quality.value)
   formData.append('muteAudio', muteAudio.value.toString())
+
+  if (logoFile.value) {
+    // Basic width in CSS is 150px. We use logoScale.
+    const baseLogoW = 150
+    const scaledLogoW = baseLogoW * logoScale.value
+    
+    // For rotation around center, the top-left shifts in ffmpeg.
+    // We will let backend handle this or just pass the parameters.
+    const realLogoW = Math.round(scaledLogoW * scale)
+    const realLogoX = Math.round(logoX.value * scale)
+    const realLogoY = Math.round(logoY.value * scale)
+    
+    formData.append('logoFile', logoFile.value)
+    formData.append('logoX', realLogoX.toString())
+    formData.append('logoY', realLogoY.toString())
+    formData.append('logoW', realLogoW.toString())
+    formData.append('logoRotation', logoRotation.value.toString())
+  }
   
   try {
     const response = await fetch('/api/process', {
@@ -275,7 +415,24 @@ onMounted(() => {
             height: `${boxHeight}px`
           }"
           @mousedown="startDrag"
-        ></div>
+        >
+          <!-- Logo inside crop box -->
+          <div 
+            v-if="logoUrl"
+            id="logo-overlay"
+            class="logo-overlay"
+            :style="{
+              left: `${logoX}px`,
+              top: `${logoY}px`,
+              width: `${150 * logoScale}px`,
+              transform: `rotate(${logoRotation}deg)`
+            }"
+            @mousedown="startLogoDrag"
+          >
+            <img :src="logoUrl" alt="Watermark Logo" class="logo-img" />
+            <div class="rotate-handle" @mousedown.stop="startRotate">↻</div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -304,7 +461,39 @@ onMounted(() => {
           <input type="number" min="1" v-model.number="customRatioH" class="input-number" />
         </label>
       </div>
+
+      <div v-if="videoDuration > 0" class="options-section">
+        <label class="option-label">
+          <span>Video Trimmen</span>
+          <div class="trim-inputs">
+            <input type="number" step="0.1" min="0" :max="trimEnd" v-model.number="trimStart" class="input-number" />
+            <span>bis</span>
+            <input type="number" step="0.1" :min="trimStart" :max="videoDuration" v-model.number="trimEnd" class="input-number" />
+            <span>Sek.</span>
+          </div>
+          <div class="range-slider-container">
+            <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimStart" class="range-slider" />
+            <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimEnd" class="range-slider" />
+          </div>
+        </label>
+      </div>
       
+      <div class="options-section">
+        <label class="option-label">
+          <span>Wasserzeichen / Logo</span>
+          <div class="logo-upload-area">
+            <input type="file" accept="image/png, image/jpeg, image/svg+xml" @change="handleLogoUpload" class="file-input" />
+            <div v-if="logoUrl" class="logo-controls">
+              <label>
+                Größe:
+                <input type="range" min="0.2" max="3" step="0.1" v-model.number="logoScale" />
+              </label>
+              <button class="btn btn-secondary btn-sm" @click="clearLogo">Entfernen</button>
+            </div>
+          </div>
+        </label>
+      </div>
+
       <div class="options-section">
         <label class="option-label">
           <span>Qualität</span>
@@ -441,11 +630,148 @@ onMounted(() => {
   background: var(--bg-tertiary);
 }
 
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.logo-overlay {
+  position: absolute;
+  cursor: move;
+  transform-origin: center center;
+}
+
+.logo-overlay:active {
+  cursor: grabbing;
+}
+
+.logo-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+.rotate-handle {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: crosshair;
+  font-size: 14px;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.rotate-handle:active {
+  background: var(--accent-hover);
+}
+
+.logo-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-input {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.logo-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(0,0,0,0.2);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.logo-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
 .options-section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.trim-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.range-slider-container {
+  position: relative;
+  height: 24px;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.range-slider {
+  position: absolute;
+  width: 100%;
+  pointer-events: none;
+  -webkit-appearance: none;
+  background: transparent;
+  margin: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.range-slider::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid white;
+  cursor: grab;
+  margin-top: -7px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.range-slider::-moz-range-thumb {
+  pointer-events: auto;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid white;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.range-slider:nth-child(1)::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: var(--glass-border);
+  border-radius: 2px;
+}
+
+.range-slider:nth-child(2)::-webkit-slider-runnable-track {
+  background: transparent;
 }
 
 .option-label {
