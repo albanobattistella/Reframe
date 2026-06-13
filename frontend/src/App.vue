@@ -33,7 +33,7 @@ const handleReset = () => {
 
   <footer class="footer">
     <div class="footer-content glass">
-      <p>Created by <a href="https://gurk.dev" target="_blank" rel="noopener">Gurkenwerfer / Stefan Eckel</a></p>
+      <p>&copy; 2026 <a href="https://gurk.dev" target="_blank" rel="noopener">Gurkenwerfer</a></p>
       <div class="social-links">
         <a href="https://matrix.to/#/@gurkenwerfer:gurk.dev" target="_blank" rel="noopener" class="social-link" title="Matrix">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
