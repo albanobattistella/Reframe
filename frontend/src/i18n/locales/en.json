@@ -59,5 +59,14 @@
     "apply_trim": "Trim",
     "apply_overlays": "Overlays",
     "apply_export": "Export Settings"
+  },
+  "config": {
+    "import": "Import Config",
+    "export": "Export Config",
+    "export_title": "Export Configuration",
+    "filename": "File name",
+    "cancel": "Cancel",
+    "save": "Save",
+    "error_import": "Failed to import configuration file."
   }
 }

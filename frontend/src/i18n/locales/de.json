@@ -59,5 +59,14 @@
     "apply_trim": "Trimmen",
     "apply_overlays": "Overlays",
     "apply_export": "Exporteinstellungen"
+  },
+  "config": {
+    "import": "Konfiguration Importieren",
+    "export": "Konfiguration Exportieren",
+    "export_title": "Konfiguration Exportieren",
+    "filename": "Dateiname",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "error_import": "Fehler beim Importieren der Konfigurationsdatei."
   }
 }

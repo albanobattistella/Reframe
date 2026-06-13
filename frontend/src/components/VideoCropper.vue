@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { fileToBase64, base64ToFile } from '../utils/config'
 
 const props = defineProps<{
   videoUrl: string
@@ -681,10 +682,98 @@ onUnmounted(() => {
   }
 })
 
+const getSerializableSettings = async () => {
+  const settings = getSettings()
+  
+  const serializedWatermarks = await Promise.all(settings.watermarks.map(async (w: any) => {
+    const base64 = await fileToBase64(w.file)
+    return {
+      ...w,
+      fileBase64: base64,
+      fileMime: w.file.type,
+      fileName: w.file.name,
+      file: undefined // Remove file object
+    }
+  }))
+
+  return {
+    ...settings,
+    watermarks: serializedWatermarks
+  }
+}
+
+const applySerializableSettings = async (config: any) => {
+  let restoredWatermarks = []
+  if (config.watermarks) {
+    restoredWatermarks = await Promise.all(config.watermarks.map(async (w: any) => {
+      if (w.fileBase64) {
+        const file = await base64ToFile(w.fileBase64, w.fileName || 'watermark.png')
+        return {
+          ...w,
+          file
+        }
+      }
+      return w
+    }))
+  }
+
+  const restoredSettings = {
+    ...config,
+    watermarks: restoredWatermarks
+  }
+
+  applySettings(restoredSettings)
+}
+
+// Config Export/Import logic (Single Mode)
+const showExportModal = ref(false)
+const exportFilename = ref('my_settings')
+const importConfigInput = ref<HTMLInputElement | null>(null)
+
+const handleExportConfig = async () => {
+  try {
+    const config = await getSerializableSettings()
+    const json = JSON.stringify(config)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${exportFilename.value}.reframe_config`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    showExportModal.value = false
+  } catch (error) {
+    console.error('Error exporting config:', error)
+  }
+}
+
+const triggerImportConfig = () => {
+  importConfigInput.value?.click()
+}
+
+const importConfig = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  const file = target.files[0]
+  try {
+    const text = await file.text()
+    const config = JSON.parse(text)
+    await applySerializableSettings(config)
+  } catch (error) {
+    console.error('Error importing config:', error)
+    alert(t('config.error_import'))
+  }
+  target.value = ''
+}
+
 defineExpose({
   runExport: exportVideo,
   getSettings,
-  applySettings
+  applySettings,
+  getSerializableSettings,
+  applySerializableSettings
 })
 </script>
 
@@ -906,6 +995,30 @@ defineExpose({
       <div v-if="isExporting || progress > 0" class="progress-bar-container">
         <div class="progress-bar" :style="{ width: `${progress}%` }"></div>
         <div class="progress-text">{{ progress }}%</div>
+      </div>
+      
+      <div class="config-actions" v-if="!isBatchMode">
+        <button class="btn btn-secondary btn-sm" @click="showExportModal = true" :disabled="isExporting">{{ $t('config.export') }}</button>
+        <button class="btn btn-secondary btn-sm" @click="triggerImportConfig" :disabled="isExporting">{{ $t('config.import') }}</button>
+        <input type="file" ref="importConfigInput" style="display: none" accept=".reframe_config" @change="importConfig" />
+      </div>
+    </div>
+
+    <!-- Export Config Modal -->
+    <div v-if="showExportModal" class="modal-backdrop">
+      <div class="modal-content glass">
+        <h3>{{ $t('config.export_title') }}</h3>
+        <label class="option-label" style="margin-top: 1rem;">
+          <span>{{ $t('config.filename') }}</span>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" v-model="exportFilename" class="input-text" />
+            <span>.reframe_config</span>
+          </div>
+        </label>
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+          <button class="btn btn-secondary" @click="showExportModal = false">{{ $t('config.cancel') }}</button>
+          <button class="btn btn-success" @click="handleExportConfig">{{ $t('config.save') }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1292,5 +1405,33 @@ defineExpose({
   font-size: 0.85rem;
   font-weight: bold;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.config-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  min-width: 350px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 </style>
