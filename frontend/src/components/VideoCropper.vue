@@ -604,6 +604,7 @@ const getSettings = () => ({
       opacity: t.opacity,
       relativeX: boxWidth.value > 0 ? t.x / boxWidth.value : 0,
       relativeY: boxHeight.value > 0 ? t.y / boxHeight.value : 0,
+      relativeScale: boxWidth.value > 0 ? t.scale / boxWidth.value : 0,
     }))
 })
 
