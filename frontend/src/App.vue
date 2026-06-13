@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import FileUpload from './components/FileUpload.vue'
 import VideoCropper from './components/VideoCropper.vue'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 
 const videoUrl = ref<string | null>(null)
 const videoFile = ref<File | null>(null)
@@ -20,10 +21,11 @@ const handleReset = () => {
 </script>
 
 <template>
+  <LanguageSwitcher />
   <header class="header">
-    <h1 class="text-gradient">Reframe 🎬</h1>
-    <p>The social media video swiss army knife.</p>
-    <p class="subtitle">Quickly crop, reframe, and export your videos for TikTok, Instagram, and more without losing quality.</p>
+    <h1 class="text-gradient">{{ $t('app.title') }}</h1>
+    <p>{{ $t('app.subtitle') }}</p>
+    <p class="subtitle">{{ $t('app.description') }}</p>
   </header>
 
   <main class="main-content">

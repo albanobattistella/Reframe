@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'upload', url: string, file: File): void
@@ -13,7 +16,7 @@ const handleFile = (file: File) => {
     const url = URL.createObjectURL(file)
     emit('upload', url, file)
   } else {
-    alert('Bitte wähle eine gültige Videodatei aus.')
+    alert(t('upload.error'))
   }
 }
 
@@ -42,8 +45,8 @@ const onFileSelect = (e: Event) => {
       <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
       </svg>
-      <h3>Video hochladen</h3>
-      <p>Klicke hier oder ziehe dein Video in diesen Bereich</p>
+      <h3>{{ $t('upload.title') }}</h3>
+      <p>{{ $t('upload.description') }}</p>
     </div>
     <input 
       type="file" 

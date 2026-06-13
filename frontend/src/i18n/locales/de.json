@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "Reframe 🎬",
+    "subtitle": "Das Schweizer Taschenmesser für Social Media Videos.",
+    "description": "Schneide, formatiere und exportiere deine Videos schnell für TikTok, Instagram und Co. ohne Qualitätsverlust."
+  },
+  "upload": {
+    "title": "Video hochladen",
+    "description": "Klicke hier oder ziehe dein Video in diesen Bereich",
+    "error": "Bitte wähle eine gültige Videodatei aus."
+  },
+  "cropper": {
+    "presets": {
+      "tiktok": "9:16 (TikTok, Reels)",
+      "insta_feed": "1:1 (Instagram Feed)",
+      "insta_portrait": "4:5 (Insta Portrait)",
+      "custom": "Benutzerdefiniert"
+    },
+    "format_title": "Format wählen",
+    "width": "Breite:",
+    "height": "Höhe:",
+    "advanced_options": "🔧 Erweiterte Optionen (Trimmen, Logo)",
+    "trim_video": "Video Trimmen",
+    "to": "bis",
+    "sec": "Sek.",
+    "watermark": "Wasserzeichen / Logo",
+    "size": "Größe:",
+    "opacity": "Deckkraft:",
+    "remove": "Entfernen",
+    "quality": "Qualität",
+    "quality_high": "Hoch (Langsam, große Datei)",
+    "quality_medium": "Mittel (Schnell, kleine Datei)",
+    "mute_audio": "Audio stummschalten",
+    "processing": "Verarbeite...",
+    "render_again": "Erneut Rendern",
+    "crop_export": "Zuschneiden & Exportieren",
+    "download": "Letztes Video Herunterladen 📥",
+    "choose_new": "Neues Video wählen",
+    "error_export": "Fehler beim Exportieren.",
+    "error_occurred": "Ein Fehler ist aufgetreten: "
+  }
+}

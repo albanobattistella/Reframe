@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "Reframe 🎬",
+    "subtitle": "Le couteau suisse de la vidéo pour réseaux sociaux.",
+    "description": "Recadrez et exportez rapidement vos vidéos pour TikTok, Instagram et plus, sans perte de qualité."
+  },
+  "upload": {
+    "title": "Télécharger la vidéo",
+    "description": "Cliquez ici ou glissez votre vidéo dans cette zone",
+    "error": "Veuillez sélectionner un fichier vidéo valide."
+  },
+  "cropper": {
+    "presets": {
+      "tiktok": "9:16 (TikTok, Reels)",
+      "insta_feed": "1:1 (Feed Instagram)",
+      "insta_portrait": "4:5 (Portrait Insta)",
+      "custom": "Personnalisé"
+    },
+    "format_title": "Sélectionner le format",
+    "width": "Largeur :",
+    "height": "Hauteur :",
+    "advanced_options": "🔧 Options avancées (Couper, Logo)",
+    "trim_video": "Couper la vidéo",
+    "to": "à",
+    "sec": "sec",
+    "watermark": "Filigrane / Logo",
+    "size": "Taille :",
+    "opacity": "Opacité :",
+    "remove": "Supprimer",
+    "quality": "Qualité",
+    "quality_high": "Haute (Lent, gros fichier)",
+    "quality_medium": "Moyenne (Rapide, petit fichier)",
+    "mute_audio": "Couper le son",
+    "processing": "Traitement...",
+    "render_again": "Rendre à nouveau",
+    "crop_export": "Recadrer et exporter",
+    "download": "Télécharger la dernière vidéo 📥",
+    "choose_new": "Choisir une nouvelle vidéo",
+    "error_export": "Erreur lors de l'exportation.",
+    "error_occurred": "Une erreur est survenue : "
+  }
+}

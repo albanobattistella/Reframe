@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   videoUrl: string
@@ -10,18 +11,20 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
+const { t } = useI18n()
+
 const presets = [
-  { label: '9:16 (TikTok, Reels)', ratio: 9/16 },
-  { label: '1:1 (Instagram Feed)', ratio: 1/1 },
-  { label: '4:5 (Insta Portrait)', ratio: 4/5 },
-  { label: 'Benutzerdefiniert', ratio: 0 },
+  { id: 'tiktok', ratio: 9/16 },
+  { id: 'insta_feed', ratio: 1/1 },
+  { id: 'insta_portrait', ratio: 4/5 },
+  { id: 'custom', ratio: 0 },
 ]
 
 const customRatioW = ref(16)
 const customRatioH = ref(9)
 
 watch([customRatioW, customRatioH], () => {
-  if (selectedPreset.value.label === 'Benutzerdefiniert') {
+  if (selectedPreset.value.id === 'custom') {
     initializeCropBox()
   }
 })
@@ -138,7 +141,7 @@ const initializeCropBox = () => {
   displayedH.value = displayedHLocal
   
   // Target ratio box
-  const targetRatio = selectedPreset.value.label === 'Benutzerdefiniert' 
+  const targetRatio = selectedPreset.value.id === 'custom' 
     ? (customRatioW.value / customRatioH.value || 1) 
     : selectedPreset.value.ratio
   let bw, bh
@@ -369,9 +372,9 @@ const exportVideo = async () => {
         ws.close()
         
         const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
-        const ratio = selectedPreset.value.label === 'Benutzerdefiniert' 
+        const ratio = selectedPreset.value.id === 'custom' 
           ? `${customRatioW.value}x${customRatioH.value}`
-          : selectedPreset.value.label.split(' ')[0].replace(':', 'x');
+          : t('cropper.presets.' + selectedPreset.value.id).split(' ')[0].replace(':', 'x');
         downloadFilename.value = `reframe_${origName}_${ratio}.mp4`;
         
         downloadUrl.value = `/api/download/${jobId}?filename=${encodeURIComponent(downloadFilename.value)}`
@@ -381,13 +384,13 @@ const exportVideo = async () => {
       if (msg.status === 'error') {
         ws.close()
         isExporting.value = false
-        alert('Ein Fehler ist aufgetreten: ' + msg.detail)
+        alert(t('cropper.error_occurred') + msg.detail)
       }
     }
   } catch (error) {
     console.error(error)
     isExporting.value = false
-    alert('Fehler beim Exportieren.')
+    alert(t('cropper.error_export'))
   }
 }
 
@@ -456,27 +459,27 @@ onUnmounted(() => {
     </div>
     
     <div class="controls-section glass">
-      <h3>Format wählen</h3>
+      <h3>{{ $t('cropper.format_title') }}</h3>
       <div class="preset-buttons">
         <button 
           v-for="preset in presets" 
-          :key="preset.label"
+          :key="preset.id"
           class="btn preset-btn"
-          :class="{ active: selectedPreset.label === preset.label }"
+          :class="{ active: selectedPreset.id === preset.id }"
           @click="selectPreset(preset)"
           :disabled="isExporting"
         >
-          {{ preset.label }}
+          {{ $t('cropper.presets.' + preset.id) }}
         </button>
       </div>
       
-      <div v-if="selectedPreset.label === 'Benutzerdefiniert'" class="custom-ratio-inputs">
+      <div v-if="selectedPreset.id === 'custom'" class="custom-ratio-inputs">
         <label>
-          Breite:
+          {{ $t('cropper.width') }}
           <input type="number" min="1" v-model.number="customRatioW" class="input-number" />
         </label>
         <label>
-          Höhe:
+          {{ $t('cropper.height') }}
           <input type="number" min="1" v-model.number="customRatioH" class="input-number" />
         </label>
       </div>
@@ -484,19 +487,19 @@ onUnmounted(() => {
       <div class="advanced-toggle" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
         <label class="option-label checkbox-label" style="cursor: pointer; color: var(--accent-neon); font-weight: 600;">
           <input type="checkbox" v-model="showAdvancedOptions" />
-          <span>🔧 Erweiterte Optionen (Trimmen, Logo)</span>
+          <span>{{ $t('cropper.advanced_options') }}</span>
         </label>
       </div>
 
       <template v-if="showAdvancedOptions">
         <div v-if="videoDuration > 0" class="options-section">
           <label class="option-label">
-            <span>Video Trimmen</span>
+            <span>{{ $t('cropper.trim_video') }}</span>
             <div class="trim-inputs">
               <input type="number" step="0.1" min="0" :max="trimEnd" v-model.number="trimStart" class="input-number" />
-              <span>bis</span>
+              <span>{{ $t('cropper.to') }}</span>
               <input type="number" step="0.1" :min="trimStart" :max="videoDuration" v-model.number="trimEnd" class="input-number" />
-              <span>Sek.</span>
+              <span>{{ $t('cropper.sec') }}</span>
             </div>
             <div class="range-slider-container">
               <div class="slider-track-bg"></div>
@@ -512,19 +515,19 @@ onUnmounted(() => {
         
         <div class="options-section">
           <label class="option-label">
-            <span>Wasserzeichen / Logo</span>
+            <span>{{ $t('cropper.watermark') }}</span>
             <div class="logo-upload-area">
               <input type="file" accept="image/png, image/jpeg, image/svg+xml" @change="handleLogoUpload" class="file-input" />
               <div v-if="logoUrl" class="logo-controls">
                 <label>
-                  Größe:
+                  {{ $t('cropper.size') }}
                   <input type="range" min="0.2" max="3" step="0.1" v-model.number="logoScale" />
                 </label>
                 <label>
-                  Deckkraft:
+                  {{ $t('cropper.opacity') }}
                   <input type="range" min="0" max="100" step="1" v-model.number="logoOpacity" />
                 </label>
-                <button class="btn btn-secondary btn-sm" @click="clearLogo">Entfernen</button>
+                <button class="btn btn-secondary btn-sm" @click="clearLogo">{{ $t('cropper.remove') }}</button>
               </div>
             </div>
           </label>
@@ -533,28 +536,28 @@ onUnmounted(() => {
 
       <div class="options-section">
         <label class="option-label">
-          <span>Qualität</span>
+          <span>{{ $t('cropper.quality') }}</span>
           <select v-model="quality" class="input-select" :disabled="isExporting">
-            <option value="high">Hoch (Langsam, große Datei)</option>
-            <option value="medium">Mittel (Schnell, kleine Datei)</option>
+            <option value="high">{{ $t('cropper.quality_high') }}</option>
+            <option value="medium">{{ $t('cropper.quality_medium') }}</option>
           </select>
         </label>
         
         <label class="option-label checkbox-label">
           <input type="checkbox" v-model="muteAudio" :disabled="isExporting" />
-          <span>Audio stummschalten</span>
+          <span>{{ $t('cropper.mute_audio') }}</span>
         </label>
       </div>
       
       <div class="export-area">
         <button class="btn btn-export" @click="exportVideo" :disabled="isExporting">
-          {{ isExporting ? 'Verarbeite...' : (downloadUrl ? 'Erneut Rendern' : 'Zuschneiden & Exportieren') }}
+          {{ isExporting ? $t('cropper.processing') : (downloadUrl ? $t('cropper.render_again') : $t('cropper.crop_export')) }}
         </button>
         <a v-if="downloadUrl && !isExporting" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
-          Letztes Video Herunterladen 📥
+          {{ $t('cropper.download') }}
         </a>
         <button class="btn btn-secondary" @click="emit('reset')" :disabled="isExporting">
-          Neues Video wählen
+          {{ $t('cropper.choose_new') }}
         </button>
       </div>
       

@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "Reframe 🎬",
+    "subtitle": "The social media video swiss army knife.",
+    "description": "Quickly crop, reframe, and export your videos for TikTok, Instagram, and more without losing quality."
+  },
+  "upload": {
+    "title": "Upload video",
+    "description": "Click here or drag your video into this area",
+    "error": "Please select a valid video file."
+  },
+  "cropper": {
+    "presets": {
+      "tiktok": "9:16 (TikTok, Reels)",
+      "insta_feed": "1:1 (Instagram Feed)",
+      "insta_portrait": "4:5 (Insta Portrait)",
+      "custom": "Custom"
+    },
+    "format_title": "Select Format",
+    "width": "Width:",
+    "height": "Height:",
+    "advanced_options": "🔧 Advanced Options (Trim, Logo)",
+    "trim_video": "Trim Video",
+    "to": "to",
+    "sec": "sec",
+    "watermark": "Watermark / Logo",
+    "size": "Size:",
+    "opacity": "Opacity:",
+    "remove": "Remove",
+    "quality": "Quality",
+    "quality_high": "High (Slow, large file)",
+    "quality_medium": "Medium (Fast, small file)",
+    "mute_audio": "Mute audio",
+    "processing": "Processing...",
+    "render_again": "Render Again",
+    "crop_export": "Crop & Export",
+    "download": "Download Last Video 📥",
+    "choose_new": "Choose New Video",
+    "error_export": "Error during export.",
+    "error_occurred": "An error occurred: "
+  }
+}
