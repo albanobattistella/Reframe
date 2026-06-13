@@ -87,7 +87,7 @@ async def process_video_ffmpeg(
         filter_str = (
             f"[0:v]crop={w}:{h}:{x}:{y}[bg]; "
             f"[1:v]scale={logoW}:-1[l_scaled]; "
-            f"[l_scaled]rotate={rotation_expr}:c=none:ow=rotw(a):oh=roth(a)[l_rotated]; "
+            f"[l_scaled]rotate={rotation_expr}:c=none[l_rotated]; "
             f"[bg][l_rotated]overlay={logoX}:{logoY}[outv]"
         )
         cmd.extend(["-filter_complex", filter_str, "-map", "[outv]"])
