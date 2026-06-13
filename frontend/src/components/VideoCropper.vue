@@ -412,7 +412,10 @@ const getSettings = () => ({
   logoY: logoY.value,
   logoRotation: logoRotation.value,
   logoScale: logoScale.value,
-  logoOpacity: logoOpacity.value
+  logoOpacity: logoOpacity.value,
+  logoRelativeX: boxWidth.value > 0 ? logoX.value / boxWidth.value : 0,
+  logoRelativeY: boxHeight.value > 0 ? logoY.value / boxHeight.value : 0,
+  logoRelativeScale: boxWidth.value > 0 ? logoScale.value / boxWidth.value : 0
 })
 
 const applySettings = (settings: any) => {
@@ -440,13 +443,22 @@ const applySettings = (settings: any) => {
     clearLogo()
   }
 
-  logoX.value = settings.logoX
-  logoY.value = settings.logoY
   logoRotation.value = settings.logoRotation
-  logoScale.value = settings.logoScale
   logoOpacity.value = settings.logoOpacity
   
+  // Calculate new box dimensions based on the new ratios
   initializeCropBox()
+
+  // Apply logo position/scale relative to the new crop box dimensions
+  if (settings.logoRelativeX !== undefined && boxWidth.value > 0) {
+    logoX.value = settings.logoRelativeX * boxWidth.value
+    logoY.value = settings.logoRelativeY * boxHeight.value
+    logoScale.value = settings.logoRelativeScale * boxWidth.value
+  } else {
+    logoX.value = settings.logoX
+    logoY.value = settings.logoY
+    logoScale.value = settings.logoScale
+  }
 }
 
 // Resize observer to handle layout shifts robustly
