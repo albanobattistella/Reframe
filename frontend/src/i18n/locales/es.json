@@ -59,5 +59,24 @@
     "apply_trim": "Recortar",
     "apply_overlays": "Superposiciones",
     "apply_export": "Ajustes de exportación"
+  },
+  "media_manager": {
+    "title": "Gestor de Medios",
+    "button": "Medios",
+    "uploads": "Subidas",
+    "exports": "Exportaciones",
+    "empty": "No se encontraron archivos multimedia en esta carpeta.",
+    "delete_success": "Archivo eliminado correctamente",
+    "delete_error": "Error al eliminar el archivo",
+    "delete_all": "Eliminar todo"
+  },
+  "config": {
+    "import": "Importar Configuración",
+    "export": "Exportar Configuración",
+    "export_title": "Exportar Configuración",
+    "filename": "Nombre del archivo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "error_import": "Error al importar el archivo de configuración."
   }
 }

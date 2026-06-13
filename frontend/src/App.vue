@@ -5,7 +5,9 @@ import VideoCropper from './components/VideoCropper.vue'
 import BatchProcessor from './components/BatchProcessor.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
+import MediaManager from './components/MediaManager.vue'
 
+const currentView = ref<'home' | 'media'>('home')
 const videoFiles = ref<{url: string, file: File}[]>([])
 
 const handleVideoUpload = (files: {url: string, file: File}[]) => {
@@ -22,28 +24,39 @@ const handleReset = () => {
 
 <template>
   <div class="top-controls">
+    <button 
+      class="btn secondary small" 
+      @click="currentView = currentView === 'home' ? 'media' : 'home'"
+    >
+      {{ currentView === 'home' ? $t('media_manager.button') : $t('app.title') }}
+    </button>
     <ThemeToggle />
     <LanguageSwitcher />
   </div>
-  <header class="header">
+  <header class="header" v-if="currentView === 'home'">
     <h1 class="text-gradient">{{ $t('app.title') }}</h1>
     <p>{{ $t('app.subtitle') }}</p>
     <p class="subtitle">{{ $t('app.description') }}</p>
   </header>
 
   <main class="main-content">
-    <FileUpload v-if="videoFiles.length === 0" @upload="handleVideoUpload" />
-    <VideoCropper 
-      v-else-if="videoFiles.length === 1" 
-      :videoUrl="videoFiles[0].url" 
-      :videoFile="videoFiles[0].file" 
-      @reset="handleReset" 
-    />
-    <BatchProcessor
-      v-else
-      :files="videoFiles"
-      @reset="handleReset"
-    />
+    <template v-if="currentView === 'home'">
+      <FileUpload v-if="videoFiles.length === 0" @upload="handleVideoUpload" />
+      <VideoCropper 
+        v-else-if="videoFiles.length === 1" 
+        :videoUrl="videoFiles[0].url" 
+        :videoFile="videoFiles[0].file" 
+        @reset="handleReset" 
+      />
+      <BatchProcessor
+        v-else
+        :files="videoFiles"
+        @reset="handleReset"
+      />
+    </template>
+    <template v-else>
+      <MediaManager />
+    </template>
   </main>
 
   <footer class="footer">

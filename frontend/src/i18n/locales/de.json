@@ -68,5 +68,15 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "error_import": "Fehler beim Importieren der Konfigurationsdatei."
+  },
+  "media_manager": {
+    "title": "Medienmanager",
+    "button": "Medien",
+    "uploads": "Uploads",
+    "exports": "Exporte",
+    "empty": "Keine Mediendateien in diesem Ordner gefunden.",
+    "delete_success": "Datei erfolgreich gelöscht",
+    "delete_error": "Fehler beim Löschen der Datei",
+    "delete_all": "Alle löschen"
   }
 }

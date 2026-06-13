@@ -59,5 +59,24 @@
     "apply_trim": "Couper",
     "apply_overlays": "Superpositions",
     "apply_export": "Paramètres d'exportation"
+  },
+  "media_manager": {
+    "title": "Gestionnaire de Médias",
+    "button": "Médias",
+    "uploads": "Téléchargements",
+    "exports": "Exportations",
+    "empty": "Aucun fichier multimédia trouvé dans ce dossier.",
+    "delete_success": "Fichier supprimé avec succès",
+    "delete_error": "Échec de la suppression du fichier",
+    "delete_all": "Tout supprimer"
+  },
+  "config": {
+    "import": "Importer la configuration",
+    "export": "Exporter la configuration",
+    "export_title": "Exporter la configuration",
+    "filename": "Nom du fichier",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "error_import": "Échec de l'importation du fichier de configuration."
   }
 }

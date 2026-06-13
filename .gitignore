@@ -1,0 +1,5 @@
+trash/
+media/
+venv/
+__pycache__/
+.env

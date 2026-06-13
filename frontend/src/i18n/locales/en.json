@@ -68,5 +68,15 @@
     "cancel": "Cancel",
     "save": "Save",
     "error_import": "Failed to import configuration file."
+  },
+  "media_manager": {
+    "title": "Media Manager",
+    "button": "Media",
+    "uploads": "Uploads",
+    "exports": "Exports",
+    "empty": "No media files found in this folder.",
+    "delete_success": "File deleted successfully",
+    "delete_error": "Failed to delete file",
+    "delete_all": "Delete All"
   }
 }

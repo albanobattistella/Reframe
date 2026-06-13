@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import VideoCropper from './VideoCropper.vue'
 
@@ -120,6 +120,27 @@ const importConfig = async (e: Event) => {
   }
   target.value = ''
 }
+
+const showJumpToTop = ref(false)
+
+const handleScroll = () => {
+  showJumpToTop.value = window.scrollY > 300
+}
+
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <template>
@@ -200,6 +221,16 @@ const importConfig = async (e: Event) => {
         </div>
       </div>
     </div>
+
+    <!-- Jump to top button -->
+    <transition name="fade">
+      <button v-show="showJumpToTop" class="jump-to-top" @click="scrollToTop" title="Jump to top">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      </button>
+    </transition>
   </div>
 </template>
 
@@ -352,5 +383,40 @@ const importConfig = async (e: Event) => {
   border-radius: var(--radius-lg);
   min-width: 350px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+.jump-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: var(--accent-neon, #00f0ff);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.jump-to-top:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  filter: brightness(1.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

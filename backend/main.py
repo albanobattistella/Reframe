@@ -536,7 +536,78 @@ async def download_video(job_id: str, filename: str = "reframe_export.mp4"):
         return FileResponse(output_path, media_type="video/mp4", filename=filename)
     return JSONResponse(status_code=404, content={"detail": "File not found"})
 
+@app.get("/api/media")
+async def list_media():
+    uploads = []
+    if os.path.exists(UPLOAD_DIR):
+        for f in os.listdir(UPLOAD_DIR):
+            path = os.path.join(UPLOAD_DIR, f)
+            if os.path.isfile(path):
+                uploads.append({
+                    "filename": f,
+                    "size": os.path.getsize(path),
+                    "created": os.path.getctime(path)
+                })
+    
+    exports = []
+    if os.path.exists(EXPORT_DIR):
+        for f in os.listdir(EXPORT_DIR):
+            path = os.path.join(EXPORT_DIR, f)
+            if os.path.isfile(path):
+                exports.append({
+                    "filename": f,
+                    "size": os.path.getsize(path),
+                    "created": os.path.getctime(path)
+                })
+                
+    # Sort descending by creation time
+    uploads.sort(key=lambda x: x["created"], reverse=True)
+    exports.sort(key=lambda x: x["created"], reverse=True)
+    
+    return {"uploads": uploads, "exports": exports}
+
+@app.delete("/api/media/{folder}/{filename}")
+async def delete_media(folder: str, filename: str):
+    if folder == "uploads":
+        file_path = os.path.join(UPLOAD_DIR, filename)
+    elif folder == "exports":
+        file_path = os.path.join(EXPORT_DIR, filename)
+    else:
+        return JSONResponse(status_code=400, content={"detail": "Invalid folder"})
+        
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            return {"status": "success"}
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"detail": f"Failed to delete file: {str(e)}"})
+    return JSONResponse(status_code=404, content={"detail": "File not found"})
+
+@app.delete("/api/media/{folder}")
+async def delete_all_media(folder: str):
+    if folder == "uploads":
+        target_dir = UPLOAD_DIR
+    elif folder == "exports":
+        target_dir = EXPORT_DIR
+    else:
+        return JSONResponse(status_code=400, content={"detail": "Invalid folder"})
+        
+    if os.path.exists(target_dir):
+        try:
+            for f in os.listdir(target_dir):
+                file_path = os.path.join(target_dir, f)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            return {"status": "success"}
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"detail": f"Failed to delete files: {str(e)}"})
+    return JSONResponse(status_code=404, content={"detail": "Folder not found"})
+
 # Try to serve frontend statically if the directory exists
 # This is useful for production (Docker)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/exports", StaticFiles(directory=EXPORT_DIR), name="exports")
+
 if os.path.exists(FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
