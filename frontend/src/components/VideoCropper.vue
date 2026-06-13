@@ -41,6 +41,12 @@ const dragStartY = ref(0)
 const dragStartLeft = ref(0)
 const dragStartTop = ref(0)
 
+// Video Boundaries
+const displayedW = ref(0)
+const displayedH = ref(0)
+const offsetX = ref(0)
+const offsetY = ref(0)
+
 const isExporting = ref(false)
 const progress = ref(0)
 const downloadUrl = ref<string | null>(null)
@@ -65,15 +71,22 @@ const initializeCropBox = () => {
   const videoRatio = videoW / videoH
   const containerRatio = containerW / containerH
   
-  let displayedW, displayedH
+  let displayedWLocal, displayedHLocal
   
   if (containerRatio > videoRatio) {
-    displayedH = containerH
-    displayedW = containerH * videoRatio
+    displayedHLocal = containerH
+    displayedWLocal = containerH * videoRatio
+    offsetX.value = (containerW - displayedWLocal) / 2
+    offsetY.value = 0
   } else {
-    displayedW = containerW
-    displayedH = containerW / videoRatio
+    displayedWLocal = containerW
+    displayedHLocal = containerW / videoRatio
+    offsetX.value = 0
+    offsetY.value = (containerH - displayedHLocal) / 2
   }
+  
+  displayedW.value = displayedWLocal
+  displayedH.value = displayedHLocal
   
   // Target ratio box
   const targetRatio = selectedPreset.value.label === 'Benutzerdefiniert' 
@@ -81,11 +94,11 @@ const initializeCropBox = () => {
     : selectedPreset.value.ratio
   let bw, bh
   if (targetRatio > videoRatio) {
-    bw = displayedW
-    bh = displayedW / targetRatio
+    bw = displayedWLocal
+    bh = displayedWLocal / targetRatio
   } else {
-    bh = displayedH
-    bw = displayedH * targetRatio
+    bh = displayedHLocal
+    bw = displayedHLocal * targetRatio
   }
   
   boxWidth.value = bw
@@ -123,8 +136,15 @@ const onDrag = (e: MouseEvent) => {
   
   if (!containerRef.value) return
   
-  boxLeft.value = dragStartLeft.value + dx
-  boxTop.value = dragStartTop.value + dy
+  let newLeft = dragStartLeft.value + dx
+  let newTop = dragStartTop.value + dy
+  
+  // Constrain bounds to actual video display area
+  newLeft = Math.max(offsetX.value, Math.min(newLeft, offsetX.value + displayedW.value - boxWidth.value))
+  newTop = Math.max(offsetY.value, Math.min(newTop, offsetY.value + displayedH.value - boxHeight.value))
+  
+  boxLeft.value = newLeft
+  boxTop.value = newTop
 }
 
 const endDrag = () => {
@@ -144,26 +164,12 @@ const exportVideo = async () => {
   const videoRatio = videoW / videoH
   const containerRatio = containerW / containerH
   
-  let displayedW, displayedH, offsetX, offsetY
-  
-  if (containerRatio > videoRatio) {
-    displayedH = containerH
-    displayedW = containerH * videoRatio
-    offsetX = (containerW - displayedW) / 2
-    offsetY = 0
-  } else {
-    displayedW = containerW
-    displayedH = containerW / videoRatio
-    offsetX = 0
-    offsetY = (containerH - displayedH) / 2
-  }
-  
-  const scale = videoW / displayedW
+  const scale = videoW / displayedW.value
   
   // Actual crop values relative to original video size
   // Ensure we don't crop outside bounds
-  let realX = Math.round((boxLeft.value - offsetX) * scale)
-  let realY = Math.round((boxTop.value - offsetY) * scale)
+  let realX = Math.round((boxLeft.value - offsetX.value) * scale)
+  let realY = Math.round((boxTop.value - offsetY.value) * scale)
   let realW = Math.round(boxWidth.value * scale)
   let realH = Math.round(boxHeight.value * scale)
   
