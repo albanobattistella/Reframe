@@ -38,5 +38,13 @@
     "choose_new": "Neues Video wählen",
     "error_export": "Fehler beim Exportieren.",
     "error_occurred": "Ein Fehler ist aufgetreten: "
+  },
+  "batch": {
+    "title": "Stapelverarbeitung",
+    "process_all": "Alle verarbeiten",
+    "processing": "Verarbeite {current} von {total}...",
+    "cancel": "Abbrechen",
+    "completed": "Alle Videos erfolgreich verarbeitet! Du kannst sie unten herunterladen.",
+    "video": "Video"
   }
 }

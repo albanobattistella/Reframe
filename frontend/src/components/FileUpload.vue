@@ -5,16 +5,21 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const emit = defineEmits<{
-  (e: 'upload', url: string, file: File): void
+  (e: 'upload', files: {url: string, file: File}[]): void
 }>()
 
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const handleFile = (file: File) => {
-  if (file && file.type.startsWith('video/')) {
-    const url = URL.createObjectURL(file)
-    emit('upload', url, file)
+const handleFiles = (files: FileList | File[]) => {
+  const validFiles = Array.from(files).filter(f => f.type.startsWith('video/'))
+  
+  if (validFiles.length > 0) {
+    const fileObjects = validFiles.map(file => ({
+      url: URL.createObjectURL(file),
+      file
+    }))
+    emit('upload', fileObjects)
   } else {
     alert(t('upload.error'))
   }
@@ -22,13 +27,16 @@ const handleFile = (file: File) => {
 
 const onDrop = (e: DragEvent) => {
   isDragging.value = false
-  const file = e.dataTransfer?.files[0]
-  if (file) handleFile(file)
+  if (e.dataTransfer?.files) {
+    handleFiles(e.dataTransfer.files)
+  }
 }
 
 const onFileSelect = (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) handleFile(file)
+  const files = (e.target as HTMLInputElement).files
+  if (files) {
+    handleFiles(files)
+  }
 }
 </script>
 
@@ -53,6 +61,7 @@ const onFileSelect = (e: Event) => {
       ref="fileInput" 
       accept="video/*" 
       class="hidden-input"
+      multiple
       @change="onFileSelect"
     />
   </div>

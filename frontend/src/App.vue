@@ -2,21 +2,20 @@
 import { ref } from 'vue'
 import FileUpload from './components/FileUpload.vue'
 import VideoCropper from './components/VideoCropper.vue'
+import BatchProcessor from './components/BatchProcessor.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 
-const videoUrl = ref<string | null>(null)
-const videoFile = ref<File | null>(null)
+const videoFiles = ref<{url: string, file: File}[]>([])
 
-const handleVideoUpload = (url: string, file: File) => {
-  videoUrl.value = url
-  videoFile.value = file
+const handleVideoUpload = (files: {url: string, file: File}[]) => {
+  videoFiles.value = files
 }
 
 const handleReset = () => {
-  if (videoUrl.value) {
-    URL.revokeObjectURL(videoUrl.value)
-  }
-  videoUrl.value = null
+  videoFiles.value.forEach(v => {
+    URL.revokeObjectURL(v.url)
+  })
+  videoFiles.value = []
 }
 </script>
 
@@ -29,8 +28,18 @@ const handleReset = () => {
   </header>
 
   <main class="main-content">
-    <FileUpload v-if="!videoUrl" @upload="handleVideoUpload" />
-    <VideoCropper v-else :videoUrl="videoUrl" :videoFile="videoFile!" @reset="handleReset" />
+    <FileUpload v-if="videoFiles.length === 0" @upload="handleVideoUpload" />
+    <VideoCropper 
+      v-else-if="videoFiles.length === 1" 
+      :videoUrl="videoFiles[0].url" 
+      :videoFile="videoFiles[0].file" 
+      @reset="handleReset" 
+    />
+    <BatchProcessor
+      v-else
+      :files="videoFiles"
+      @reset="handleReset"
+    />
   </main>
 
   <footer class="footer">

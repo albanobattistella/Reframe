@@ -38,5 +38,13 @@
     "choose_new": "Choose New Video",
     "error_export": "Error during export.",
     "error_occurred": "An error occurred: "
+  },
+  "batch": {
+    "title": "Batch Processing",
+    "process_all": "Process All",
+    "processing": "Processing {current} of {total}...",
+    "cancel": "Cancel",
+    "completed": "All videos processed successfully! You can download them below.",
+    "video": "Video"
   }
 }

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 const props = defineProps<{
   videoUrl: string
   videoFile: File
+  isBatchMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -294,7 +295,7 @@ const endRotate = () => {
   window.removeEventListener('mouseup', endRotate)
 }
 
-const exportVideo = async () => {
+const exportVideo = async (): Promise<void> => {
   if (!videoRef.value || !containerRef.value) return
   
   const videoW = videoRef.value.videoWidth
@@ -302,14 +303,11 @@ const exportVideo = async () => {
   
   const scale = videoW / displayedW.value
   
-  // Actual crop values relative to original video size
-  // Ensure we don't crop outside bounds
   let realX = Math.round((boxLeft.value - offsetX.value) * scale)
   let realY = Math.round((boxTop.value - offsetY.value) * scale)
   let realW = Math.round(boxWidth.value * scale)
   let realH = Math.round(boxHeight.value * scale)
   
-  // Clamp values
   realX = Math.max(0, Math.min(realX, videoW - realW))
   realY = Math.max(0, Math.min(realY, videoH - realH))
   
@@ -329,17 +327,13 @@ const exportVideo = async () => {
   formData.append('muteAudio', muteAudio.value.toString())
 
   if (logoFile.value) {
-    // Basic width in CSS is 150px. We use logoScale.
     const baseLogoW = 150
     const scaledLogoW = baseLogoW * logoScale.value
     
-    // Calculate the real logo height based on its natural aspect ratio
     const logoImg = document.querySelector('.logo-img') as HTMLImageElement;
     const logoRatio = logoImg && logoImg.naturalHeight ? (logoImg.naturalWidth / logoImg.naturalHeight) : 1;
     const scaledLogoH = scaledLogoW / logoRatio;
     
-    // For rotation around center, the top-left shifts in ffmpeg.
-    // We will let backend handle this or just pass the parameters.
     const realLogoW = Math.round(scaledLogoW * scale)
     const realLogoH = Math.round(scaledLogoH * scale)
     const realLogoX = Math.round(logoX.value * scale)
@@ -354,51 +348,55 @@ const exportVideo = async () => {
     formData.append('logoOpacity', logoOpacity.value.toString())
   }
   
-  try {
-    const response = await fetch('/api/process', {
-      method: 'POST',
-      body: formData
-    })
-    
-    if (!response.ok) throw new Error('Export failed')
-    
-    const data = await response.json()
-    const jobId = data.job_id
-    
-    // Connect to websocket for progress
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/ws/progress/${jobId}`
-    const ws = new WebSocket(wsUrl)
-    
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
-      if (msg.progress !== undefined) {
-        progress.value = msg.progress
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) throw new Error('Export failed')
+      
+      const data = await response.json()
+      const jobId = data.job_id
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/ws/progress/${jobId}`
+      const ws = new WebSocket(wsUrl)
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data)
+        if (msg.progress !== undefined) {
+          progress.value = msg.progress
+        }
+        if (msg.status === 'completed') {
+          ws.close()
+          
+          const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
+          const ratio = selectedPreset.value.id === 'custom' 
+            ? `${customRatioW.value}x${customRatioH.value}`
+            : t('cropper.presets.' + selectedPreset.value.id).split(' ')[0].replace(':', 'x');
+          downloadFilename.value = `reframe_${origName}_${ratio}.mp4`;
+          
+          downloadUrl.value = `/api/download/${jobId}?filename=${encodeURIComponent(downloadFilename.value)}`
+          isExporting.value = false
+          progress.value = 100
+          resolve()
+        }
+        if (msg.status === 'error') {
+          ws.close()
+          isExporting.value = false
+          alert(t('cropper.error_occurred') + msg.detail)
+          reject(new Error(msg.detail))
+        }
       }
-      if (msg.status === 'completed') {
-        ws.close()
-        
-        const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
-        const ratio = selectedPreset.value.id === 'custom' 
-          ? `${customRatioW.value}x${customRatioH.value}`
-          : t('cropper.presets.' + selectedPreset.value.id).split(' ')[0].replace(':', 'x');
-        downloadFilename.value = `reframe_${origName}_${ratio}.mp4`;
-        
-        downloadUrl.value = `/api/download/${jobId}?filename=${encodeURIComponent(downloadFilename.value)}`
-        isExporting.value = false
-        progress.value = 100
-      }
-      if (msg.status === 'error') {
-        ws.close()
-        isExporting.value = false
-        alert(t('cropper.error_occurred') + msg.detail)
-      }
+    } catch (error) {
+      console.error(error)
+      isExporting.value = false
+      alert(t('cropper.error_export'))
+      reject(error)
     }
-  } catch (error) {
-    console.error(error)
-    isExporting.value = false
-    alert(t('cropper.error_export'))
-  }
+  })
 }
 
 // Resize observer to handle layout shifts robustly
@@ -417,6 +415,10 @@ onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect()
   }
+})
+
+defineExpose({
+  runExport: exportVideo
 })
 </script>
 
@@ -556,14 +558,14 @@ onUnmounted(() => {
         </label>
       </div>
       
-      <div class="export-area">
-        <button class="btn btn-export" @click="exportVideo" :disabled="isExporting">
+      <div class="export-area" v-if="!isBatchMode || downloadUrl">
+        <button v-if="!isBatchMode" class="btn btn-export" @click="exportVideo" :disabled="isExporting">
           {{ isExporting ? $t('cropper.processing') : (downloadUrl ? $t('cropper.render_again') : $t('cropper.crop_export')) }}
         </button>
         <a v-if="downloadUrl && !isExporting" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
           {{ $t('cropper.download') }}
         </a>
-        <button class="btn btn-secondary" @click="emit('reset')" :disabled="isExporting">
+        <button v-if="!isBatchMode" class="btn btn-secondary" @click="emit('reset')" :disabled="isExporting">
           {{ $t('cropper.choose_new') }}
         </button>
       </div>
@@ -612,8 +614,8 @@ onUnmounted(() => {
 }
 
 .video-element {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 

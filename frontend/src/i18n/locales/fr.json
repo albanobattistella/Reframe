@@ -38,5 +38,13 @@
     "choose_new": "Choisir une nouvelle vidéo",
     "error_export": "Erreur lors de l'exportation.",
     "error_occurred": "Une erreur est survenue : "
+  },
+  "batch": {
+    "title": "Traitement par lots",
+    "process_all": "Tout traiter",
+    "processing": "Traitement de {current} sur {total}...",
+    "cancel": "Annuler",
+    "completed": "Toutes les vidéos ont été traitées avec succès ! Vous pouvez les télécharger ci-dessous.",
+    "video": "Vidéo"
   }
 }
