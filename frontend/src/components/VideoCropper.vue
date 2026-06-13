@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 const props = defineProps<{
   videoUrl: string
@@ -14,7 +14,17 @@ const presets = [
   { label: '9:16 (TikTok, Reels)', ratio: 9/16 },
   { label: '1:1 (Instagram Feed)', ratio: 1/1 },
   { label: '4:5 (Insta Portrait)', ratio: 4/5 },
+  { label: 'Benutzerdefiniert', ratio: 0 },
 ]
+
+const customRatioW = ref(16)
+const customRatioH = ref(9)
+
+watch([customRatioW, customRatioH], () => {
+  if (selectedPreset.value.label === 'Benutzerdefiniert') {
+    initializeCropBox()
+  }
+})
 
 const selectedPreset = ref(presets[0])
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -66,7 +76,9 @@ const initializeCropBox = () => {
   }
   
   // Target ratio box
-  const targetRatio = selectedPreset.value.ratio
+  const targetRatio = selectedPreset.value.label === 'Benutzerdefiniert' 
+    ? (customRatioW.value / customRatioH.value || 1) 
+    : selectedPreset.value.ratio
   let bw, bh
   if (targetRatio > videoRatio) {
     bw = displayedW
@@ -197,7 +209,9 @@ const exportVideo = async () => {
         ws.close()
         
         const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
-        const ratio = selectedPreset.value.label.split(' ')[0].replace(':', 'x');
+        const ratio = selectedPreset.value.label === 'Benutzerdefiniert' 
+          ? `${customRatioW.value}x${customRatioH.value}`
+          : selectedPreset.value.label.split(' ')[0].replace(':', 'x');
         downloadFilename.value = `reframe_${origName}_${ratio}.mp4`;
         
         downloadUrl.value = `/api/download/${jobId}?filename=${encodeURIComponent(downloadFilename.value)}`
@@ -263,6 +277,17 @@ onMounted(() => {
         >
           {{ preset.label }}
         </button>
+      </div>
+      
+      <div v-if="selectedPreset.label === 'Benutzerdefiniert'" class="custom-ratio-inputs">
+        <label>
+          Breite:
+          <input type="number" min="1" v-model.number="customRatioW" class="input-number" />
+        </label>
+        <label>
+          Höhe:
+          <input type="number" min="1" v-model.number="customRatioH" class="input-number" />
+        </label>
       </div>
       
       <div class="options-section">
@@ -431,6 +456,32 @@ onMounted(() => {
   outline: none;
 }
 .input-select:focus {
+  border-color: var(--accent);
+}
+
+.custom-ratio-inputs {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.custom-ratio-inputs label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.input-number {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  width: 70px;
+  outline: none;
+}
+.input-number:focus {
   border-color: var(--accent);
 }
 
