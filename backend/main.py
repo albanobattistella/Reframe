@@ -3,11 +3,11 @@ import os
 import re
 import uuid
 import subprocess
-from fastapi import FastAPI, UploadFile, Form, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, Form, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict
+from typing import Dict, List, Optional
 
 app = FastAPI(title="Reframe API")
 
@@ -55,20 +55,34 @@ async def process_video_ffmpeg(
     muteAudio: str,
     trimStart: float = None,
     trimEnd: float = None,
-    logo_path: str = None,
-    logoX: int = None,
-    logoY: int = None,
-    logoW: int = None,
-    logoH: int = None,
-    logoRotation: float = None,
-    logoOpacity: int = 100,
-    text_path: str = None,
-    textX: int = None,
-    textY: int = None,
-    textW: int = None,
-    textH: int = None,
-    textRotation: float = None
+    logo_paths: List[str] = None,
+    logoXs: List[int] = None,
+    logoYs: List[int] = None,
+    logoWs: List[int] = None,
+    logoHs: List[int] = None,
+    logoRotations: List[float] = None,
+    logoOpacities: List[int] = None,
+    text_paths: List[str] = None,
+    textXs: List[int] = None,
+    textYs: List[int] = None,
+    textWs: List[int] = None,
+    textHs: List[int] = None,
+    textRotations: List[float] = None
 ):
+    logo_paths = logo_paths or []
+    logoXs = logoXs or []
+    logoYs = logoYs or []
+    logoWs = logoWs or []
+    logoHs = logoHs or []
+    logoRotations = logoRotations or []
+    logoOpacities = logoOpacities or []
+    
+    text_paths = text_paths or []
+    textXs = textXs or []
+    textYs = textYs or []
+    textWs = textWs or []
+    textHs = textHs or []
+    textRotations = textRotations or []
     duration = get_video_duration(input_path)
     if trimStart is not None and trimEnd is not None:
         duration = trimEnd - trimStart
@@ -93,40 +107,54 @@ async def process_video_ffmpeg(
     current_bg = "[bg]"
     input_idx = 1
     
-    if logo_path:
+    for i, logo_path in enumerate(logo_paths):
         cmd.extend(["-i", logo_path])
-        rotation_expr = f"{logoRotation}*PI/180" if logoRotation else "0"
-        opacity_val = logoOpacity / 100.0 if logoOpacity is not None else 1.0
+        rotation = logoRotations[i] if i < len(logoRotations) and logoRotations[i] is not None else 0
+        rotation_expr = f"{rotation}*PI/180"
+        
+        opacity = logoOpacities[i] if i < len(logoOpacities) and logoOpacities[i] is not None else 100
+        opacity_val = opacity / 100.0
         opacity_filter = f",format=rgba,colorchannelmixer=aa={opacity_val}" if opacity_val < 1.0 else ""
         
-        if logoH is not None:
+        lW = logoWs[i] if i < len(logoWs) else 150
+        lH = logoHs[i] if i < len(logoHs) else None
+        lX = logoXs[i] if i < len(logoXs) else 0
+        lY = logoYs[i] if i < len(logoYs) else 0
+        
+        if lH is not None:
             rotate_filter = f"rotate={rotation_expr}:c=none:ow='hypot(iw,ih)':oh='hypot(iw,ih)'"
-            overlay_expr = f"{logoX}+{logoW}/2-w/2:{logoY}+{logoH}/2-h/2"
+            overlay_expr = f"{lX}+{lW}/2-w/2:{lY}+{lH}/2-h/2"
         else:
             rotate_filter = f"rotate={rotation_expr}:c=none"
-            overlay_expr = f"{logoX}:{logoY}"
+            overlay_expr = f"{lX}:{lY}"
             
-        filters.append(f"[{input_idx}:v]scale={logoW}:-1{opacity_filter}[l_scaled]")
-        filters.append(f"[l_scaled]{rotate_filter}[l_rotated]")
-        filters.append(f"{current_bg}[l_rotated]overlay={overlay_expr}[bg_with_logo]")
-        current_bg = "[bg_with_logo]"
+        filters.append(f"[{input_idx}:v]scale={lW}:-1{opacity_filter}[l_scaled_{i}]")
+        filters.append(f"[l_scaled_{i}]{rotate_filter}[l_rotated_{i}]")
+        filters.append(f"{current_bg}[l_rotated_{i}]overlay={overlay_expr}[bg_with_logo_{i}]")
+        current_bg = f"[bg_with_logo_{i}]"
         input_idx += 1
         
-    if text_path:
+    for i, text_path in enumerate(text_paths):
         cmd.extend(["-i", text_path])
-        rotation_expr = f"{textRotation}*PI/180" if textRotation else "0"
+        rotation = textRotations[i] if i < len(textRotations) and textRotations[i] is not None else 0
+        rotation_expr = f"{rotation}*PI/180"
         
-        if textH is not None:
+        tW = textWs[i] if i < len(textWs) else 100
+        tH = textHs[i] if i < len(textHs) else None
+        tX = textXs[i] if i < len(textXs) else 0
+        tY = textYs[i] if i < len(textYs) else 0
+        
+        if tH is not None:
             rotate_filter = f"rotate={rotation_expr}:c=none:ow='hypot(iw,ih)':oh='hypot(iw,ih)'"
-            overlay_expr = f"{textX}+{textW}/2-w/2:{textY}+{textH}/2-h/2"
+            overlay_expr = f"{tX}+{tW}/2-w/2:{tY}+{tH}/2-h/2"
         else:
             rotate_filter = f"rotate={rotation_expr}:c=none"
-            overlay_expr = f"{textX}:{textY}"
+            overlay_expr = f"{tX}:{tY}"
             
-        filters.append(f"[{input_idx}:v]scale={textW}:-1[t_scaled]")
-        filters.append(f"[t_scaled]{rotate_filter}[t_rotated]")
-        filters.append(f"{current_bg}[t_rotated]overlay={overlay_expr}[bg_with_text]")
-        current_bg = "[bg_with_text]"
+        filters.append(f"[{input_idx}:v]scale={tW}:-1[t_scaled_{i}]")
+        filters.append(f"[t_scaled_{i}]{rotate_filter}[t_rotated_{i}]")
+        filters.append(f"{current_bg}[t_rotated_{i}]overlay={overlay_expr}[bg_with_text_{i}]")
+        current_bg = f"[bg_with_text_{i}]"
         input_idx += 1
         
     if current_bg != "[bg]":
@@ -206,19 +234,19 @@ async def process_video(
     muteAudio: str = Form("false"),
     trimStart: float = Form(None),
     trimEnd: float = Form(None),
-    logoFile: UploadFile = Form(None),
-    logoX: int = Form(None),
-    logoY: int = Form(None),
-    logoW: int = Form(None),
-    logoH: int = Form(None),
-    logoRotation: float = Form(None),
-    logoOpacity: int = Form(100),
-    textFile: UploadFile = Form(None),
-    textX: int = Form(None),
-    textY: int = Form(None),
-    textW: int = Form(None),
-    textH: int = Form(None),
-    textRotation: float = Form(None)
+    logoFiles: List[UploadFile] = File([]),
+    logoXs: List[int] = Form([]),
+    logoYs: List[int] = Form([]),
+    logoWs: List[int] = Form([]),
+    logoHs: List[int] = Form([]),
+    logoRotations: List[float] = Form([]),
+    logoOpacities: List[int] = Form([]),
+    textFiles: List[UploadFile] = File([]),
+    textXs: List[int] = Form([]),
+    textYs: List[int] = Form([]),
+    textWs: List[int] = Form([]),
+    textHs: List[int] = Form([]),
+    textRotations: List[float] = Form([])
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -229,23 +257,29 @@ async def process_video(
     with open(input_path, "wb") as f:
         f.write(content)
         
-    logo_path = None
-    if logoFile:
-        logo_ext = os.path.splitext(logoFile.filename)[1] or ".png" if logoFile.filename else ".png"
-        logo_filename = f"{job_id}_logo{logo_ext}"
-        logo_path = os.path.join(UPLOAD_DIR, logo_filename)
-        logo_content = await logoFile.read()
-        with open(logo_path, "wb") as f:
-            f.write(logo_content)
-        
-    text_path = None
-    if textFile:
-        text_ext = os.path.splitext(textFile.filename)[1] or ".png" if textFile.filename else ".png"
-        text_filename = f"{job_id}_text{text_ext}"
-        text_path = os.path.join(UPLOAD_DIR, text_filename)
-        text_content = await textFile.read()
-        with open(text_path, "wb") as f:
-            f.write(text_content)
+    logo_paths = []
+    if logoFiles:
+        for i, lf in enumerate(logoFiles):
+            if not lf or not lf.filename: continue
+            logo_ext = os.path.splitext(lf.filename)[1] or ".png"
+            logo_filename = f"{job_id}_logo_{i}{logo_ext}"
+            logo_path = os.path.join(UPLOAD_DIR, logo_filename)
+            logo_content = await lf.read()
+            with open(logo_path, "wb") as f:
+                f.write(logo_content)
+            logo_paths.append(logo_path)
+            
+    text_paths = []
+    if textFiles:
+        for i, tf in enumerate(textFiles):
+            if not tf or not tf.filename: continue
+            text_ext = os.path.splitext(tf.filename)[1] or ".png"
+            text_filename = f"{job_id}_text_{i}{text_ext}"
+            text_path = os.path.join(UPLOAD_DIR, text_filename)
+            text_content = await tf.read()
+            with open(text_path, "wb") as f:
+                f.write(text_content)
+            text_paths.append(text_path)
         
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
@@ -253,8 +287,8 @@ async def process_video(
     asyncio.create_task(process_video_ffmpeg(
         job_id, input_path, output_path, 
         x, y, width, height, quality, muteAudio,
-        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoH, logoRotation, logoOpacity,
-        text_path, textX, textY, textW, textH, textRotation
+        trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
+        text_paths, textXs, textYs, textWs, textHs, textRotations
     ))
     
     return {"job_id": job_id}
