@@ -524,11 +524,11 @@ onMounted(() => {
       </div>
       
       <div class="export-area">
-        <button v-if="!downloadUrl" class="btn btn-export" @click="exportVideo" :disabled="isExporting">
-          {{ isExporting ? 'Verarbeite...' : 'Zuschneiden & Exportieren' }}
+        <button class="btn btn-export" @click="exportVideo" :disabled="isExporting">
+          {{ isExporting ? 'Verarbeite...' : (downloadUrl ? 'Erneut Rendern' : 'Zuschneiden & Exportieren') }}
         </button>
-        <a v-if="downloadUrl" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
-          Video Herunterladen 📥
+        <a v-if="downloadUrl && !isExporting" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
+          Letztes Video Herunterladen 📥
         </a>
         <button class="btn btn-secondary" @click="emit('reset')" :disabled="isExporting">
           Neues Video wählen
