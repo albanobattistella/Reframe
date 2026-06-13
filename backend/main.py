@@ -59,6 +59,7 @@ async def process_video_ffmpeg(
     logoX: int = None,
     logoY: int = None,
     logoW: int = None,
+    logoH: int = None,
     logoRotation: float = None,
     logoOpacity: int = 100
 ):
@@ -88,11 +89,18 @@ async def process_video_ffmpeg(
         opacity_val = logoOpacity / 100.0 if logoOpacity is not None else 1.0
         opacity_filter = f",format=rgba,colorchannelmixer=aa={opacity_val}" if opacity_val < 1.0 else ""
         
+        if logoH is not None:
+            rotate_filter = f"rotate={rotation_expr}:c=none:ow='hypot(iw,ih)':oh='hypot(iw,ih)'"
+            overlay_expr = f"{logoX}+{logoW}/2-w/2:{logoY}+{logoH}/2-h/2"
+        else:
+            rotate_filter = f"rotate={rotation_expr}:c=none"
+            overlay_expr = f"{logoX}:{logoY}"
+            
         filter_str = (
             f"[0:v]crop={w}:{h}:{x}:{y}[bg]; "
             f"[1:v]scale={logoW}:-1{opacity_filter}[l_scaled]; "
-            f"[l_scaled]rotate={rotation_expr}:c=none[l_rotated]; "
-            f"[bg][l_rotated]overlay={logoX}:{logoY}[outv]"
+            f"[l_scaled]{rotate_filter}[l_rotated]; "
+            f"[bg][l_rotated]overlay={overlay_expr}[outv]"
         )
         cmd.extend(["-filter_complex", filter_str, "-map", "[outv]"])
         if muteAudio != "true":
@@ -173,6 +181,7 @@ async def process_video(
     logoX: int = Form(None),
     logoY: int = Form(None),
     logoW: int = Form(None),
+    logoH: int = Form(None),
     logoRotation: float = Form(None),
     logoOpacity: int = Form(100)
 ):
@@ -200,7 +209,7 @@ async def process_video(
     asyncio.create_task(process_video_ffmpeg(
         job_id, input_path, output_path, 
         x, y, width, height, quality, muteAudio,
-        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoRotation, logoOpacity
+        trimStart, trimEnd, logo_path, logoX, logoY, logoW, logoH, logoRotation, logoOpacity
     ))
     
     return {"job_id": job_id}

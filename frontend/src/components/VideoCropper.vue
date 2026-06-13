@@ -333,9 +333,15 @@ const exportVideo = async () => {
     const baseLogoW = 150
     const scaledLogoW = baseLogoW * logoScale.value
     
+    // Calculate the real logo height based on its natural aspect ratio
+    const logoImg = document.querySelector('.logo-img') as HTMLImageElement;
+    const logoRatio = logoImg && logoImg.naturalHeight ? (logoImg.naturalWidth / logoImg.naturalHeight) : 1;
+    const scaledLogoH = scaledLogoW / logoRatio;
+    
     // For rotation around center, the top-left shifts in ffmpeg.
     // We will let backend handle this or just pass the parameters.
     const realLogoW = Math.round(scaledLogoW * scale)
+    const realLogoH = Math.round(scaledLogoH * scale)
     const realLogoX = Math.round(logoX.value * scale)
     const realLogoY = Math.round(logoY.value * scale)
     
@@ -343,6 +349,7 @@ const exportVideo = async () => {
     formData.append('logoX', realLogoX.toString())
     formData.append('logoY', realLogoY.toString())
     formData.append('logoW', realLogoW.toString())
+    formData.append('logoH', realLogoH.toString())
     formData.append('logoRotation', logoRotation.value.toString())
     formData.append('logoOpacity', logoOpacity.value.toString())
   }
