@@ -901,7 +901,7 @@ defineExpose({
 
       <template v-if="showAdvancedOptions">
         <div v-if="videoDuration > 0" class="options-section">
-          <label class="option-label">
+          <div class="option-label">
             <span>{{ $t('cropper.trim_video') }}</span>
             <div class="trim-inputs">
               <input type="number" step="0.1" min="0" :max="trimEnd" v-model.number="trimStart" class="input-number" />
@@ -918,11 +918,11 @@ defineExpose({
               <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimStart" class="range-slider" />
               <input type="range" min="0" :max="videoDuration" step="0.1" v-model.number="trimEnd" class="range-slider" />
             </div>
-          </label>
+          </div>
         </div>
         
         <div class="options-section">
-          <label class="option-label">
+          <div class="option-label">
             <span>{{ $t('cropper.watermark') }}</span>
             <div class="logo-upload-area">
               <input type="file" multiple accept="image/png, image/jpeg, image/svg+xml" @change="handleLogoUpload" class="file-input" />
@@ -939,11 +939,11 @@ defineExpose({
                 <button class="btn btn-secondary btn-sm" @click="removeWatermark(index)">{{ $t('cropper.remove') }}</button>
               </div>
             </div>
-          </label>
+          </div>
         </div>
         
         <div class="options-section">
-          <label class="option-label">
+          <div class="option-label">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <span>{{ $t('cropper.text_overlay') }}</span>
               <button class="btn btn-sm btn-secondary" @click="addText">{{ $t('cropper.text_add') }}</button>
@@ -976,7 +976,7 @@ defineExpose({
                 </label>
               </div>
             </div>
-          </label>
+          </div>
         </div>
       </template>
 
