@@ -123,7 +123,23 @@ const removeText = (index: number) => {
   texts.value.splice(index, 1)
 }
 
-const fonts = ['Fira Code', 'Inter', 'Georgia', 'Arial']
+const fonts = [
+  'Fira Code', 
+  'Inter', 
+  'Arial', 
+  'Verdana', 
+  'Tahoma', 
+  'Trebuchet MS', 
+  'Times New Roman', 
+  'Georgia', 
+  'Garamond', 
+  'Courier New', 
+  'Brush Script MT', 
+  'Comic Sans MS', 
+  'Impact', 
+  'Palatino Linotype', 
+  'Lucida Sans Unicode'
+]
 
 // Calculate crop box size based on preset and video aspect ratio
 const initializeCropBox = () => {
