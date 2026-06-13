@@ -48,7 +48,7 @@ version: '3.8'
 
 services:
   reframe:
-    image: ghcr.io/your-username/reframe:latest
+    image: ghcr.io/stefexec/reframe:latest
     container_name: reframe
     ports:
       - "8080:8080"

@@ -8,6 +8,7 @@ RUN npm run build
 
 # Stage 2: Backend + FFmpeg + Static Files
 FROM python:3.11-slim
+LABEL org.opencontainers.image.source=https://github.com/stefexec/Reframe
 WORKDIR /app
 
 # Install FFmpeg and AMD VAAPI drivers
