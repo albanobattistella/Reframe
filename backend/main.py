@@ -53,6 +53,7 @@ async def process_video_ffmpeg(
     x: int, y: int, w: int, h: int, 
     quality: str, 
     muteAudio: str,
+    useGpu: str = "false",
     trimStart: float = None,
     trimEnd: float = None,
     logo_paths: List[str] = None,
@@ -91,10 +92,16 @@ async def process_video_ffmpeg(
     job_progress[job_id] = 0
     
     # Quality settings
-    crf = "18" if quality == "high" else "23"
-    preset = "slow" if quality == "high" else "fast"
+    if useGpu == "true":
+        qp = "20" if quality == "high" else "24"
+    else:
+        crf = "18" if quality == "high" else "23"
+        preset = "slow" if quality == "high" else "fast"
     
     cmd = ["ffmpeg", "-y"]
+    
+    if useGpu == "true":
+        cmd.extend(["-vaapi_device", "/dev/dri/renderD128"])
     
     if trimStart is not None and trimStart > 0:
         cmd.extend(["-ss", str(trimStart)])
@@ -158,14 +165,23 @@ async def process_video_ffmpeg(
         input_idx += 1
         
     if current_bg != "[bg]":
+        if useGpu == "true":
+            filters.append(f"{current_bg}format=nv12,hwupload[hw]")
+            current_bg = "[hw]"
         filter_str = "; ".join(filters)
         cmd.extend(["-filter_complex", filter_str, "-map", current_bg])
         if muteAudio != "true":
             cmd.extend(["-map", "0:a?"])
     else:
-        cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y}"])
+        if useGpu == "true":
+            cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},format=nv12,hwupload"])
+        else:
+            cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y}"])
         
-    cmd.extend(["-c:v", "libx264", "-crf", crf, "-preset", preset])
+    if useGpu == "true":
+        cmd.extend(["-c:v", "h264_vaapi", "-qp", qp])
+    else:
+        cmd.extend(["-c:v", "libx264", "-crf", crf, "-preset", preset])
     
     if muteAudio == "true":
         cmd.append("-an")
@@ -232,6 +248,7 @@ async def process_video(
     height: int = Form(...),
     quality: str = Form("high"),
     muteAudio: str = Form("false"),
+    useGpu: str = Form("false"),
     trimStart: float = Form(None),
     trimEnd: float = Form(None),
     logoFiles: List[UploadFile] = File([]),
@@ -286,7 +303,7 @@ async def process_video(
     
     asyncio.create_task(process_video_ffmpeg(
         job_id, input_path, output_path, 
-        x, y, width, height, quality, muteAudio,
+        x, y, width, height, quality, muteAudio, useGpu,
         trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
         text_paths, textXs, textYs, textWs, textHs, textRotations
     ))

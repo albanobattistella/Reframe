@@ -31,6 +31,7 @@
     "quality_high": "Haute (Lent, gros fichier)",
     "quality_medium": "Moyenne (Rapide, petit fichier)",
     "mute_audio": "Couper le son",
+    "hardware_acceleration": "Accélération matérielle (GPU)",
     "processing": "Traitement...",
     "render_again": "Rendre à nouveau",
     "crop_export": "Recadrer et exporter",
@@ -53,6 +54,10 @@
     "cancel": "Annuler",
     "completed": "Toutes les vidéos ont été traitées avec succès ! Vous pouvez les télécharger ci-dessous.",
     "video": "Vidéo",
-    "apply_to_all": "Appliquer les paramètres à tous"
+    "apply_to_all": "Appliquer les paramètres à tous",
+    "apply_crop": "Format / Recadrage",
+    "apply_trim": "Couper",
+    "apply_overlays": "Superpositions",
+    "apply_export": "Paramètres d'exportation"
   }
 }

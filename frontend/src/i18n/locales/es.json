@@ -31,6 +31,7 @@
     "quality_high": "Alta (Lento, archivo grande)",
     "quality_medium": "Media (Rápido, archivo pequeño)",
     "mute_audio": "Silenciar audio",
+    "hardware_acceleration": "Aceleración de hardware (GPU)",
     "processing": "Procesando...",
     "render_again": "Renderizar de nuevo",
     "crop_export": "Recortar y exportar",
@@ -45,5 +46,18 @@
     "text_shadow": "Sombra",
     "text_add": "Añadir Texto",
     "text_remove": "Quitar Texto"
+  },
+  "batch": {
+    "title": "Procesamiento por lotes",
+    "process_all": "Procesar todo",
+    "processing": "Procesando {current} de {total}...",
+    "cancel": "Cancelar",
+    "completed": "¡Todos los videos procesados exitosamente! Puedes descargarlos a continuación.",
+    "video": "Video",
+    "apply_to_all": "Aplicar ajustes a todos",
+    "apply_crop": "Formato / Recorte",
+    "apply_trim": "Recortar",
+    "apply_overlays": "Superposiciones",
+    "apply_export": "Ajustes de exportación"
   }
 }

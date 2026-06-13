@@ -31,6 +31,7 @@
     "quality_high": "High (Slow, large file)",
     "quality_medium": "Medium (Fast, small file)",
     "mute_audio": "Mute audio",
+    "hardware_acceleration": "Hardware Acceleration (GPU)",
     "processing": "Processing...",
     "render_again": "Render Again",
     "crop_export": "Crop & Export",
@@ -53,6 +54,10 @@
     "cancel": "Cancel",
     "completed": "All videos processed successfully! You can download them below.",
     "video": "Video",
-    "apply_to_all": "Apply settings to all"
+    "apply_to_all": "Apply settings to all",
+    "apply_crop": "Format / Crop",
+    "apply_trim": "Trim",
+    "apply_overlays": "Overlays",
+    "apply_export": "Export Settings"
   }
 }

@@ -78,6 +78,7 @@ const downloadFilename = ref("reframe-export.mp4")
 // Quality Options
 const quality = ref('high')
 const muteAudio = ref(false)
+const useGpu = ref(false)
 
 // Overlay State
 const showAdvancedOptions = ref(false)
@@ -478,6 +479,7 @@ const exportVideo = async (): Promise<void> => {
   formData.append('trimEnd', trimEnd.value.toString())
   formData.append('quality', quality.value)
   formData.append('muteAudio', muteAudio.value.toString())
+  formData.append('useGpu', useGpu.value.toString())
 
   watermarks.value.forEach((wm, index) => {
     const baseLogoW = 150
@@ -579,6 +581,7 @@ const getSettings = () => ({
   customRatioH: customRatioH.value,
   quality: quality.value,
   muteAudio: muteAudio.value,
+  useGpu: useGpu.value,
   trimStart: trimStart.value,
   trimEnd: trimEnd.value,
   
@@ -600,51 +603,64 @@ const getSettings = () => ({
       opacity: t.opacity,
       relativeX: boxWidth.value > 0 ? t.x / boxWidth.value : 0,
       relativeY: boxHeight.value > 0 ? t.y / boxHeight.value : 0,
-      relativeScale: boxWidth.value > 0 ? t.scale / boxWidth.value : 0
     }))
 })
 
-const applySettings = (settings: any) => {
-  selectedPreset.value = settings.selectedPreset
-  customRatioW.value = settings.customRatioW
-  customRatioH.value = settings.customRatioH
-  quality.value = settings.quality
-  muteAudio.value = settings.muteAudio
+const applySettings = (settings: any, options?: any) => {
+  const opt = options || { crop: true, trim: true, overlays: true, export: true }
+
+  if (opt.crop) {
+    if (settings.selectedPreset !== undefined) selectedPreset.value = settings.selectedPreset
+    if (settings.customRatioW !== undefined) customRatioW.value = settings.customRatioW
+    if (settings.customRatioH !== undefined) customRatioH.value = settings.customRatioH
+  }
   
-  if (settings.trimStart !== undefined && settings.trimStart < videoDuration.value) {
-    trimStart.value = settings.trimStart
+  if (opt.export) {
+    if (settings.quality !== undefined) quality.value = settings.quality
+    if (settings.muteAudio !== undefined) muteAudio.value = settings.muteAudio
+    if (settings.useGpu !== undefined) useGpu.value = settings.useGpu
   }
-  if (settings.trimEnd !== undefined && settings.trimEnd <= videoDuration.value) {
-    trimEnd.value = settings.trimEnd
-  }
-  if (trimStart.value > trimEnd.value) {
-    trimStart.value = Math.max(0, trimEnd.value - 0.1)
+  
+  if (opt.trim) {
+    if (settings.trimStart !== undefined && settings.trimStart < videoDuration.value) {
+      trimStart.value = settings.trimStart
+    }
+    if (settings.trimEnd !== undefined && settings.trimEnd <= videoDuration.value) {
+      trimEnd.value = settings.trimEnd
+    }
+    if (trimStart.value > trimEnd.value) {
+      trimStart.value = Math.max(0, trimEnd.value - 0.1)
+    }
   }
 
-  initializeCropBox()
+  if (opt.crop || opt.trim) {
+    initializeCropBox()
+  }
 
-  watermarks.value.forEach(w => URL.revokeObjectURL(w.url))
-  watermarks.value = (settings.watermarks || []).map((w: any) => ({
-    file: w.file,
-    url: URL.createObjectURL(w.file),
-    rotation: w.rotation,
-    opacity: w.opacity,
-    x: boxWidth.value > 0 && w.relativeX !== undefined ? w.relativeX * boxWidth.value : 10,
-    y: boxHeight.value > 0 && w.relativeY !== undefined ? w.relativeY * boxHeight.value : 10,
-    scale: boxWidth.value > 0 && w.relativeScale !== undefined ? w.relativeScale * boxWidth.value : 1
-  }))
-  
-  texts.value = (settings.texts || []).map((t: any) => ({
-      content: t.content,
-      font: t.font,
-      color: t.color,
-      shadow: t.shadow !== undefined ? t.shadow : true,
-      rotation: t.rotation,
-      opacity: t.opacity !== undefined ? t.opacity : 100,
-      x: boxWidth.value > 0 && t.relativeX !== undefined ? t.relativeX * boxWidth.value : 50,
-      y: boxHeight.value > 0 && t.relativeY !== undefined ? t.relativeY * boxHeight.value : 50,
-      scale: boxWidth.value > 0 && t.relativeScale !== undefined ? t.relativeScale * boxWidth.value : 1
+  if (opt.overlays) {
+    watermarks.value.forEach(w => URL.revokeObjectURL(w.url))
+    watermarks.value = (settings.watermarks || []).map((w: any) => ({
+      file: w.file,
+      url: URL.createObjectURL(w.file),
+      rotation: w.rotation,
+      opacity: w.opacity,
+      x: boxWidth.value > 0 && w.relativeX !== undefined ? w.relativeX * boxWidth.value : 10,
+      y: boxHeight.value > 0 && w.relativeY !== undefined ? w.relativeY * boxHeight.value : 10,
+      scale: boxWidth.value > 0 && w.relativeScale !== undefined ? w.relativeScale * boxWidth.value : 1
     }))
+    
+    texts.value = (settings.texts || []).map((t: any) => ({
+        content: t.content,
+        font: t.font,
+        color: t.color,
+        shadow: t.shadow !== undefined ? t.shadow : true,
+        rotation: t.rotation,
+        opacity: t.opacity !== undefined ? t.opacity : 100,
+        x: boxWidth.value > 0 && t.relativeX !== undefined ? t.relativeX * boxWidth.value : 50,
+        y: boxHeight.value > 0 && t.relativeY !== undefined ? t.relativeY * boxHeight.value : 50,
+        scale: boxWidth.value > 0 && t.relativeScale !== undefined ? t.relativeScale * boxWidth.value : 1
+      }))
+  }
 }
 
 // Resize observer to handle layout shifts robustly
@@ -867,6 +883,11 @@ defineExpose({
         <label class="option-label checkbox-label">
           <input type="checkbox" v-model="muteAudio" :disabled="isExporting" />
           <span>{{ $t('cropper.mute_audio') }}</span>
+        </label>
+        
+        <label class="option-label checkbox-label">
+          <input type="checkbox" v-model="useGpu" :disabled="isExporting" />
+          <span>{{ $t('cropper.hardware_acceleration') }}</span>
         </label>
       </div>
       

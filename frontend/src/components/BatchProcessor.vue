@@ -39,6 +39,23 @@ const processAll = async () => {
   isProcessing.value = false
 }
 
+const applyOptions = ref({
+  crop: true,
+  trim: false,
+  overlays: true,
+  export: true
+})
+
+const showOptionsFor = ref<number | null>(null)
+
+const toggleOptions = (index: number) => {
+  if (showOptionsFor.value === index) {
+    showOptionsFor.value = null
+  } else {
+    showOptionsFor.value = index
+  }
+}
+
 const applySettingsToAll = (sourceIndex: number) => {
   const sourceCropper = croppers.value[sourceIndex]
   if (!sourceCropper) return
@@ -47,9 +64,11 @@ const applySettingsToAll = (sourceIndex: number) => {
   
   croppers.value.forEach((cropper, idx) => {
     if (idx !== sourceIndex && cropper) {
-      cropper.applySettings(settings)
+      cropper.applySettings(settings, applyOptions.value)
     }
   })
+  
+  showOptionsFor.value = null
 }
 </script>
 
@@ -74,9 +93,30 @@ const applySettingsToAll = (sourceIndex: number) => {
       <div v-for="(fileObj, index) in files" :key="index" class="batch-item">
         <div class="batch-item-header">
           <h3>{{ $t('batch.video') }} {{ index + 1 }}: {{ fileObj.file.name }}</h3>
-          <button class="btn btn-sm btn-secondary" @click="applySettingsToAll(index)" :disabled="isProcessing">
-            {{ $t('batch.apply_to_all') }}
-          </button>
+          <div class="apply-group">
+            <button class="btn btn-sm btn-secondary apply-btn" @click="applySettingsToAll(index)" :disabled="isProcessing">
+              {{ $t('batch.apply_to_all') }}
+            </button>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-secondary dropdown-toggle" @click="toggleOptions(index)" :disabled="isProcessing">
+                ▼
+              </button>
+              <div class="dropdown-menu glass" v-if="showOptionsFor === index">
+                <label class="dropdown-item">
+                  <input type="checkbox" v-model="applyOptions.crop" /> {{ $t('batch.apply_crop') }}
+                </label>
+                <label class="dropdown-item">
+                  <input type="checkbox" v-model="applyOptions.trim" /> {{ $t('batch.apply_trim') }}
+                </label>
+                <label class="dropdown-item">
+                  <input type="checkbox" v-model="applyOptions.overlays" /> {{ $t('batch.apply_overlays') }}
+                </label>
+                <label class="dropdown-item">
+                  <input type="checkbox" v-model="applyOptions.export" /> {{ $t('batch.apply_export') }}
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
         <VideoCropper 
           :ref="el => { if (el) croppers[index] = el as any }"
@@ -151,5 +191,60 @@ const applySettingsToAll = (sourceIndex: number) => {
 .batch-item-header h3 {
   margin: 0;
   color: var(--accent-neon);
+}
+
+.apply-group {
+  display: flex;
+  position: relative;
+  gap: 2px;
+  align-items: stretch;
+}
+
+.dropdown {
+  display: flex;
+}
+
+.apply-btn {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dropdown-toggle {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 0 0.5rem;
+  height: 100%;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 100;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid var(--glass-border);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.dropdown-item input[type="checkbox"] {
+  accent-color: var(--accent-neon);
+  width: 1.2rem;
+  height: 1.2rem;
+  cursor: pointer;
 }
 </style>

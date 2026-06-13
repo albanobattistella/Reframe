@@ -10,9 +10,9 @@ RUN npm run build
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install FFmpeg
+# Install FFmpeg and AMD VAAPI drivers
 RUN apt-get update && \
-    apt-get install -y ffmpeg && \
+    apt-get install -y ffmpeg mesa-va-drivers libva-drm2 libva2 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

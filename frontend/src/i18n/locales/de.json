@@ -31,6 +31,7 @@
     "quality_high": "Hoch (Langsam, große Datei)",
     "quality_medium": "Mittel (Schnell, kleine Datei)",
     "mute_audio": "Audio stummschalten",
+    "hardware_acceleration": "Hardware-Beschleunigung (GPU)",
     "processing": "Verarbeite...",
     "render_again": "Erneut Rendern",
     "crop_export": "Zuschneiden & Exportieren",
@@ -53,6 +54,10 @@
     "cancel": "Abbrechen",
     "completed": "Alle Videos erfolgreich verarbeitet! Du kannst sie unten herunterladen.",
     "video": "Video",
-    "apply_to_all": "Einstellungen auf alle anwenden"
+    "apply_to_all": "Einstellungen auf alle anwenden",
+    "apply_crop": "Format / Zuschnitt",
+    "apply_trim": "Trimmen",
+    "apply_overlays": "Overlays",
+    "apply_export": "Exporteinstellungen"
   }
 }
