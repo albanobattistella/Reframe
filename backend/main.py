@@ -66,6 +66,7 @@ def get_video_dimensions(filepath: str) -> tuple[int, int]:
 
 def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int]:
     try:
+        from PIL import Image, ImageDraw, ImageFont, ImageFilter
         content = t_item.get("content", "")
         color = t_item.get("color", "#ffffff")
         shadow = t_item.get("shadow", True)
@@ -99,18 +100,34 @@ def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int
                 font = ImageFont.load_default()
                 
         lines = content.split('\n')
-        y_offset = int(font_size * 0.2)
-        x_offset = int(font_size * 0.2)
+        padding_x = int(font_size * 0.4)
+        padding_y = int(font_size * 0.4)
+        y_offset = padding_y
+        x_offset = padding_x
         
+        if shadow:
+            shadow_img = Image.new('RGBA', (4000, 4000), (0, 0, 0, 0))
+            d_shadow = ImageDraw.Draw(shadow_img)
+            sy_offset = y_offset
+            for line in lines:
+                d_shadow.text((x_offset, sy_offset), line, font=font, fill=(0,0,0,255))
+                sy_offset += int(font_size * 1.2)
+            
+            blur_radius = max(3, int(font_size * 0.12))
+            shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+            
+            shadow_offset_x = max(2, int(font_size*0.06))
+            shadow_offset_y = max(2, int(font_size*0.06))
+            for _ in range(4):
+                img.alpha_composite(shadow_img, (shadow_offset_x, shadow_offset_y))
+
         for line in lines:
-            if shadow:
-                d.text((x_offset + max(1, int(font_size*0.05)), y_offset + max(1, int(font_size*0.05))), line, font=font, fill=(0,0,0, 200))
             d.text((x_offset, y_offset), line, font=font, fill=color)
             y_offset += int(font_size * 1.2)
             
         bbox = img.getbbox()
         if bbox:
-            img = img.crop(bbox)
+            img = img.crop((0, 0, bbox[2] + padding_x, bbox[3] + padding_y))
         else:
             img = Image.new('RGBA', (10, 10), (255, 255, 255, 0))
             
@@ -452,7 +469,7 @@ async def automate_process(
             logoWs.append(logo_w)
             logoHs.append(logo_h)
             logoXs.append(int(w.get("relativeX", 0) * cw))
-            logoYs.append(int(w.get("relativeY", 0) * cw))
+            logoYs.append(int(w.get("relativeY", 0) * ch))
             logoRotations.append(w.get("rotation", 0))
             logoOpacities.append(w.get("opacity", 100))
             
@@ -465,7 +482,7 @@ async def automate_process(
             textWs.append(img_w)
             textHs.append(img_h)
             textXs.append(int(t.get("relativeX", 0) * cw))
-            textYs.append(int(t.get("relativeY", 0) * cw))
+            textYs.append(int(t.get("relativeY", 0) * ch))
             textRotations.append(t.get("rotation", 0))
             
     output_filename = f"{job_id}_out.mp4"
