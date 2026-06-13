@@ -158,11 +158,6 @@ const exportVideo = async () => {
   
   const videoW = videoRef.value.videoWidth
   const videoH = videoRef.value.videoHeight
-  const containerW = containerRef.value.clientWidth
-  const containerH = containerRef.value.clientHeight
-  
-  const videoRatio = videoW / videoH
-  const containerRatio = containerW / containerH
   
   const scale = videoW / displayedW.value
   
