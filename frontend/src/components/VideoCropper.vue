@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { fileToBase64, base64ToFile } from '../utils/config'
 
@@ -75,6 +75,9 @@ const isExporting = ref(false)
 const progress = ref(0)
 const downloadUrl = ref<string | null>(null)
 const downloadFilename = ref("reframe-export.mp4")
+const latestLogText = ref('Exporting...')
+const logs = ref<string[]>([])
+const showLogs = ref(false)
 
 // Quality Options
 const quality = ref('high')
@@ -539,6 +542,10 @@ const createTextFile = async (textEl: HTMLElement, textItem: any): Promise<File>
 
 const exportVideo = async (): Promise<void> => {
   if (!videoRef.value || !containerRef.value) return
+  isExporting.value = true
+  progress.value = 0
+  logs.value = []
+  latestLogText.value = 'Initializing...'
   
   const videoW = videoRef.value.videoWidth
   const videoH = videoRef.value.videoHeight
@@ -643,6 +650,25 @@ const exportVideo = async (): Promise<void> => {
         const msg = JSON.parse(event.data)
         if (msg.progress !== undefined) {
           progress.value = msg.progress
+        }
+        if (msg.log) {
+          logs.value.push(msg.log)
+          
+          if (msg.log.includes('Downloading')) {
+            const match = msg.log.match(/(\d+%)/)
+            if (match) latestLogText.value = `Downloading Model... ${match[1]}`
+            else latestLogText.value = 'Downloading Model...'
+          } else if (msg.log.includes('frame=')) {
+            const fpsMatch = msg.log.match(/fps=\s*(\d+)/)
+            latestLogText.value = fpsMatch ? `Rendering at ${fpsMatch[1]}fps...` : 'Rendering...'
+          } else if (msg.status === 'transcribing') {
+            latestLogText.value = 'Transcribing Audio...'
+          }
+
+          nextTick(() => {
+            const terminal = document.getElementById('log-terminal')
+            if (terminal) terminal.scrollTop = terminal.scrollHeight
+          })
         }
         if (msg.status === 'completed') {
           ws.close()
@@ -1158,7 +1184,10 @@ defineExpose({
       
       <div class="export-area" v-if="!isBatchMode || downloadUrl">
         <button v-if="!isBatchMode" class="btn btn-export" @click="exportVideo" :disabled="isExporting">
-          {{ isExporting ? $t('cropper.processing') : (downloadUrl ? $t('cropper.render_again') : $t('cropper.crop_export')) }}
+          {{ isExporting ? latestLogText : (downloadUrl ? $t('cropper.render_again') : $t('cropper.crop_export')) }}
+        </button>
+        <button v-if="isExporting" class="btn btn-secondary" @click="showLogs = !showLogs">
+          {{ showLogs ? 'Hide Console' : 'Show Console' }}
         </button>
         <a v-if="downloadUrl && !isExporting" :href="downloadUrl" :download="downloadFilename" class="btn btn-success">
           {{ $t('cropper.download') }}
@@ -1197,10 +1226,88 @@ defineExpose({
         </div>
       </div>
     </div>
+    
+    <!-- Floating Terminal Modal -->
+    <div v-if="showLogs && isExporting" class="terminal-modal glass">
+      <div class="terminal-header">
+        <span>Render Console</span>
+        <button class="close-btn" @click="showLogs = false">&times;</button>
+      </div>
+      <div class="terminal-body" id="log-terminal">
+        <div v-for="(log, idx) in logs" :key="idx" class="log-line">{{ log }}</div>
+        <div v-if="logs.length === 0" class="log-line text-muted">Waiting for logs...</div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.terminal-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 450px;
+  height: 300px;
+  background: rgba(10, 15, 30, 0.95);
+  border: 1px solid var(--accent-neon);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.terminal-header {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #ff5f56;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8rem;
+  color: #00ff00;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.log-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.text-muted {
+  color: #888;
+}
+
+.cropper-container {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1400px;
+}
+
 .cropper-layout {
   display: flex;
   gap: 2rem;

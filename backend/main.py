@@ -140,7 +140,19 @@ def generate_tiktok_ass(
     with open(output_ass, 'w', encoding='utf-8') as f:
         f.write("\n".join(ass_content))
 
-def transcribe_audio(input_file: str, model_size: str):
+import contextlib
+import io
+
+class CallbackStream(io.StringIO):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+    def write(self, s):
+        if s.strip():
+            self.callback(s)
+        return super().write(s)
+
+def transcribe_audio(input_file: str, model_size: str, log_callback=None):
     if not WhisperModel: return []
     
     import av
@@ -151,13 +163,20 @@ def transcribe_audio(input_file: str, model_size: str):
     except Exception:
         return []
         
-    model = WhisperModel(model_size, device="cpu", compute_type="int8", download_root=MODELS_DIR)
-    segments, _ = model.transcribe(input_file, word_timestamps=True)
-    words = []
-    for segment in segments:
-        for word in segment.words:
-            words.append(word)
-    return words
+    def run_model():
+        model = WhisperModel(model_size, device="cpu", compute_type="int8", download_root=MODELS_DIR)
+        segments, _ = model.transcribe(input_file, word_timestamps=True)
+        words = []
+        for segment in segments:
+            for word in segment.words:
+                words.append(word)
+        return words
+
+    if log_callback:
+        stream = CallbackStream(log_callback)
+        with contextlib.redirect_stderr(stream):
+            return run_model()
+    return run_model()
 
 def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int]:
     try:
@@ -422,6 +441,12 @@ async def process_video_ffmpeg(
         
         line_str = line.decode('utf-8')
         stderr_log.append(line_str)
+        if job_id in active_connections:
+            for ws in active_connections[job_id]:
+                try:
+                    await ws.send_json({"progress": 0, "status": "processing", "log": line_str})
+                except:
+                    pass
         match = time_regex.search(line_str)
         if match and duration > 0:
             hrs, mins, secs = match.groups()
@@ -478,7 +503,16 @@ async def process_video_pipeline(
                     try: await ws.send_json({"progress": 0, "status": "transcribing"})
                     except: pass
                     
-            words = await asyncio.to_thread(transcribe_audio, input_path, subtitleModel)
+            loop = asyncio.get_running_loop()
+            def sync_log(msg):
+                if job_id in active_connections:
+                    for ws in active_connections[job_id]:
+                        asyncio.run_coroutine_threadsafe(
+                            ws.send_json({"progress": 0, "status": "transcribing", "log": msg}),
+                            loop
+                        )
+
+            words = await asyncio.to_thread(transcribe_audio, input_path, subtitleModel, sync_log)
             
             if words:
                 subtitle_ass_path = os.path.join(UPLOAD_DIR, f"{job_id}_subs.ass")
