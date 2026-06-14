@@ -13,7 +13,6 @@ Everything runs locally via Docker, so your files never leave your machine.
 - **Scripting API:** A REST endpoint (`/api/automate`) lets you trigger video processing programmatically by sending JSON configurations.
 - **Import/Export:** Save your settings as a preset file and load them later.
 - **Media Manager:** View all your uploaded and exported media in a sleek list. Exported videos automatically display their rich metadata and full extracted transcripts.
-- **Custom Filenames:** Configure specific output names for your exports rather than relying on standard IDs.
 - **Custom Fonts:** Upload `.ttf` and `.otf` files through the app to use them in text overlays and subtitles.
 - **Auto-Subtitles (Whisper AI):** Automatically generate dynamic, TikTok-style word-by-word subtitles with customizable fonts, stroke, and highlight colors.
 - **Model Manager:** Download and manage local Whisper AI models directly from the UI for fully offline transcription.
