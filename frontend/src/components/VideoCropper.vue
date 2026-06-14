@@ -130,6 +130,7 @@ const removeText = (index: number) => {
 
 const subtitleEnabled = ref(false)
 const subtitleFont = ref('Fira Code')
+const subtitleFontSize = ref(32)
 const subtitleColor = ref('#ffffff')
 const subtitleHighlight = ref('#ffff00')
 const subtitleStroke = ref('#000000')
@@ -579,6 +580,7 @@ const exportVideo = async (): Promise<void> => {
   formData.append('subtitleEnabled', subtitleEnabled.value ? "true" : "false")
   formData.append('subtitleModel', localStorage.getItem('reframe_subtitle_model') || 'base')
   formData.append('subtitleFont', subtitleFont.value)
+  formData.append('subtitleFontSize', Math.round(subtitleFontSize.value * scale).toString())
   formData.append('subtitleColor', subtitleColor.value)
   formData.append('subtitleHighlight', subtitleHighlight.value)
   formData.append('subtitleStroke', subtitleStroke.value)
@@ -712,6 +714,7 @@ const getSettings = () => ({
   
   subtitleEnabled: subtitleEnabled.value,
   subtitleFont: subtitleFont.value,
+  subtitleFontSize: subtitleFontSize.value,
   subtitleColor: subtitleColor.value,
   subtitleHighlight: subtitleHighlight.value,
   subtitleStroke: subtitleStroke.value,
@@ -776,6 +779,7 @@ const applySettings = (settings: any, options?: any) => {
   if (opt.overlays) {
     if (settings.subtitleEnabled !== undefined) subtitleEnabled.value = settings.subtitleEnabled
     if (settings.subtitleFont !== undefined) subtitleFont.value = settings.subtitleFont
+    if (settings.subtitleFontSize !== undefined) subtitleFontSize.value = settings.subtitleFontSize
     if (settings.subtitleColor !== undefined) subtitleColor.value = settings.subtitleColor
     if (settings.subtitleHighlight !== undefined) subtitleHighlight.value = settings.subtitleHighlight
     if (settings.subtitleStroke !== undefined) subtitleStroke.value = settings.subtitleStroke
@@ -1003,7 +1007,7 @@ defineExpose({
             }"
             @mousedown="startSubtitleDrag($event)"
           >
-            <div class="subtitle-preview" :style="{ fontFamily: subtitleFont, color: subtitleColor }">
+            <div class="subtitle-preview" :style="{ fontFamily: subtitleFont, color: subtitleColor, fontSize: `${subtitleFontSize}px` }">
               <span class="preview-text" :style="{ textShadow: `2px 2px 0 ${subtitleStroke}, -2px -2px 0 ${subtitleStroke}, 2px -2px 0 ${subtitleStroke}, -2px 2px 0 ${subtitleStroke}` }">
                 Tiktok <span :style="{ color: subtitleHighlight }">Subtitle</span>
               </span>
@@ -1142,6 +1146,12 @@ defineExpose({
                 <select v-model="subtitleFont" class="input-select" style="flex: 1;">
                   <option v-for="font in fonts" :key="font" :value="font">{{ font }}</option>
                 </select>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Font Size</span>
+                  <input type="range" v-model.number="subtitleFontSize" min="10" max="150" />
+                </label>
               </div>
               <div style="display: flex; gap: 1rem; align-items: center;">
                 <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
@@ -1470,7 +1480,6 @@ defineExpose({
 }
 
 .subtitle-preview {
-  font-size: 2rem;
   font-weight: 900;
   text-align: center;
   line-height: 1.2;

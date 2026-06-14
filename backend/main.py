@@ -96,14 +96,12 @@ def get_font_family_name(font_path: str, default_name: str) -> str:
 
 def generate_tiktok_ass(
     words: list, output_ass: str, cw: int, ch: int,
-    x: int, y: int, w: int, h: int, font_name: str, 
+    x: int, y: int, w: int, h: int, font_name: str, font_size: int,
     base_color: str, highlight_color: str, stroke_color: str
 ):
     ass_base_color = hex_to_ass_color(base_color)
     ass_high_color = hex_to_ass_color(highlight_color)
     ass_stroke_color = hex_to_ass_color(stroke_color)
-    
-    font_size = h // 2 if h > 20 else 40
     
     ass_content = [
         "[Script Info]",
@@ -509,7 +507,7 @@ async def process_video_pipeline(
     trimStart: float, trimEnd: float, logo_paths: list, logoXs: list, logoYs: list, 
     logoWs: list, logoHs: list, logoRotations: list, logoOpacities: list,
     text_paths: list, textXs: list, textYs: list, textWs: list, textHs: list, textRotations: list,
-    subtitleEnabled: str, subtitleModel: str, subtitleFont: str, subtitleColor: str, 
+    subtitleEnabled: str, subtitleModel: str, subtitleFont: str, subtitleFontSize: int, subtitleColor: str, 
     subtitleHighlight: str, subtitleStroke: str, subtitleX: int, subtitleY: int, 
     subtitleW: int, subtitleH: int
 ):
@@ -551,7 +549,7 @@ async def process_video_pipeline(
                 generate_tiktok_ass(
                     words, subtitle_ass_path, w, h,
                     subtitleX, subtitleY, subtitleW, subtitleH,
-                    ass_font_name, subtitleColor, subtitleHighlight, subtitleStroke
+                    ass_font_name, subtitleFontSize, subtitleColor, subtitleHighlight, subtitleStroke
                 )
                 
         await process_video_ffmpeg(
@@ -597,6 +595,7 @@ async def process_video(
     subtitleEnabled: str = Form("false"),
     subtitleModel: str = Form("base"),
     subtitleFont: str = Form("Arial"),
+    subtitleFontSize: int = Form(40),
     subtitleColor: str = Form("#ffffff"),
     subtitleHighlight: str = Form("#ffff00"),
     subtitleStroke: str = Form("#000000"),
@@ -646,7 +645,7 @@ async def process_video(
         x, y, width, height, quality, muteAudio, useGpu,
         trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
         text_paths, textXs, textYs, textWs, textHs, textRotations,
-        subtitleEnabled, subtitleModel, subtitleFont, subtitleColor, subtitleHighlight,
+        subtitleEnabled, subtitleModel, subtitleFont, subtitleFontSize, subtitleColor, subtitleHighlight,
         subtitleStroke, subtitleX, subtitleY, subtitleW, subtitleH
     ))
     
