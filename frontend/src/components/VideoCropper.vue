@@ -125,6 +125,77 @@ const removeText = (index: number) => {
   texts.value.splice(index, 1)
 }
 
+const subtitleEnabled = ref(false)
+const subtitleFont = ref('Fira Code')
+const subtitleColor = ref('#ffffff')
+const subtitleHighlight = ref('#ffff00')
+const subtitleStroke = ref('#000000')
+
+const subtitleX = ref(50)
+const subtitleY = ref(50)
+const subtitleW = ref(300)
+const subtitleH = ref(80)
+
+const isSubtitleDragging = ref(false)
+const subtitleDragStartX = ref(0)
+const subtitleDragStartY = ref(0)
+const subtitleDragStartLeft = ref(0)
+const subtitleDragStartTop = ref(0)
+
+const startSubtitleDrag = (e: MouseEvent) => {
+  e.stopPropagation()
+  isSubtitleDragging.value = true
+  subtitleDragStartX.value = e.clientX
+  subtitleDragStartY.value = e.clientY
+  subtitleDragStartLeft.value = subtitleX.value
+  subtitleDragStartTop.value = subtitleY.value
+  window.addEventListener('mousemove', onSubtitleDrag)
+  window.addEventListener('mouseup', endSubtitleDrag)
+}
+
+const onSubtitleDrag = (e: MouseEvent) => {
+  if (!isSubtitleDragging.value) return
+  const dx = e.clientX - subtitleDragStartX.value
+  const dy = e.clientY - subtitleDragStartY.value
+  subtitleX.value = subtitleDragStartLeft.value + dx
+  subtitleY.value = subtitleDragStartTop.value + dy
+}
+
+const endSubtitleDrag = () => {
+  isSubtitleDragging.value = false
+  window.removeEventListener('mousemove', onSubtitleDrag)
+  window.removeEventListener('mouseup', endSubtitleDrag)
+}
+
+const isSubtitleResizing = ref(false)
+const subtitleResizeStartW = ref(0)
+const subtitleResizeStartH = ref(0)
+
+const startSubtitleResize = (e: MouseEvent) => {
+  e.stopPropagation()
+  isSubtitleResizing.value = true
+  subtitleDragStartX.value = e.clientX
+  subtitleDragStartY.value = e.clientY
+  subtitleResizeStartW.value = subtitleW.value
+  subtitleResizeStartH.value = subtitleH.value
+  window.addEventListener('mousemove', onSubtitleResize)
+  window.addEventListener('mouseup', endSubtitleResize)
+}
+
+const onSubtitleResize = (e: MouseEvent) => {
+  if (!isSubtitleResizing.value) return
+  const dx = e.clientX - subtitleDragStartX.value
+  const dy = e.clientY - subtitleDragStartY.value
+  subtitleW.value = Math.max(50, subtitleResizeStartW.value + dx)
+  subtitleH.value = Math.max(20, subtitleResizeStartH.value + dy)
+}
+
+const endSubtitleResize = () => {
+  isSubtitleResizing.value = false
+  window.removeEventListener('mousemove', onSubtitleResize)
+  window.removeEventListener('mouseup', endSubtitleResize)
+}
+
 const fonts = ref<string[]>([
   'Fira Code', 'Inter', 'Arial', 'Verdana', 'Tahoma', 'Trebuchet MS', 
   'Times New Roman', 'Georgia', 'Garamond', 'Courier New', 
@@ -497,6 +568,17 @@ const exportVideo = async (): Promise<void> => {
   formData.append('quality', quality.value)
   formData.append('muteAudio', muteAudio.value.toString())
   formData.append('useGpu', useGpu.value.toString())
+  
+  formData.append('subtitleEnabled', subtitleEnabled.value ? "true" : "false")
+  formData.append('subtitleModel', localStorage.getItem('reframe_subtitle_model') || 'base')
+  formData.append('subtitleFont', subtitleFont.value)
+  formData.append('subtitleColor', subtitleColor.value)
+  formData.append('subtitleHighlight', subtitleHighlight.value)
+  formData.append('subtitleStroke', subtitleStroke.value)
+  formData.append('subtitleX', Math.round(subtitleX.value * scale).toString())
+  formData.append('subtitleY', Math.round(subtitleY.value * scale).toString())
+  formData.append('subtitleW', Math.round(subtitleW.value * scale).toString())
+  formData.append('subtitleH', Math.round(subtitleH.value * scale).toString())
 
   watermarks.value.forEach((wm, index) => {
     const baseLogoW = 150
@@ -602,6 +684,16 @@ const getSettings = () => ({
   trimStart: trimStart.value,
   trimEnd: trimEnd.value,
   
+  subtitleEnabled: subtitleEnabled.value,
+  subtitleFont: subtitleFont.value,
+  subtitleColor: subtitleColor.value,
+  subtitleHighlight: subtitleHighlight.value,
+  subtitleStroke: subtitleStroke.value,
+  subtitleRelativeX: boxWidth.value > 0 ? subtitleX.value / boxWidth.value : 0,
+  subtitleRelativeY: boxHeight.value > 0 ? subtitleY.value / boxHeight.value : 0,
+  subtitleRelativeW: boxWidth.value > 0 ? subtitleW.value / boxWidth.value : 0,
+  subtitleRelativeH: boxHeight.value > 0 ? subtitleH.value / boxHeight.value : 0,
+  
   watermarks: watermarks.value.map(w => ({
     file: w.file,
     rotation: w.rotation,
@@ -656,6 +748,16 @@ const applySettings = (settings: any, options?: any) => {
   }
 
   if (opt.overlays) {
+    if (settings.subtitleEnabled !== undefined) subtitleEnabled.value = settings.subtitleEnabled
+    if (settings.subtitleFont !== undefined) subtitleFont.value = settings.subtitleFont
+    if (settings.subtitleColor !== undefined) subtitleColor.value = settings.subtitleColor
+    if (settings.subtitleHighlight !== undefined) subtitleHighlight.value = settings.subtitleHighlight
+    if (settings.subtitleStroke !== undefined) subtitleStroke.value = settings.subtitleStroke
+    if (settings.subtitleRelativeX !== undefined && boxWidth.value > 0) subtitleX.value = settings.subtitleRelativeX * boxWidth.value
+    if (settings.subtitleRelativeY !== undefined && boxHeight.value > 0) subtitleY.value = settings.subtitleRelativeY * boxHeight.value
+    if (settings.subtitleRelativeW !== undefined && boxWidth.value > 0) subtitleW.value = settings.subtitleRelativeW * boxWidth.value
+    if (settings.subtitleRelativeH !== undefined && boxHeight.value > 0) subtitleH.value = settings.subtitleRelativeH * boxHeight.value
+
     watermarks.value.forEach(w => URL.revokeObjectURL(w.url))
     watermarks.value = (settings.watermarks || []).map((w: any) => ({
       file: w.file,
@@ -862,6 +964,26 @@ defineExpose({
             <div class="text-content" style="white-space: pre-wrap; text-align: center; font-weight: bold; line-height: 1.2;">{{ tItem.content }}</div>
             <div class="rotate-handle" @mousedown.stop="startTextRotate($event, i)">↻</div>
           </div>
+          
+          <!-- Subtitle Overlay -->
+          <div 
+            v-if="subtitleEnabled"
+            class="subtitle-overlay"
+            :style="{
+              left: `${subtitleX}px`,
+              top: `${subtitleY}px`,
+              width: `${subtitleW}px`,
+              height: `${subtitleH}px`
+            }"
+            @mousedown="startSubtitleDrag($event)"
+          >
+            <div class="subtitle-preview" :style="{ fontFamily: subtitleFont, color: subtitleColor }">
+              <span class="preview-text" :style="{ textShadow: `2px 2px 0 ${subtitleStroke}, -2px -2px 0 ${subtitleStroke}, 2px -2px 0 ${subtitleStroke}, -2px 2px 0 ${subtitleStroke}` }">
+                Tiktok <span :style="{ color: subtitleHighlight }">Subtitle</span>
+              </span>
+            </div>
+            <div class="resize-handle" @mousedown.stop="startSubtitleResize($event)">⤡</div>
+          </div>
         </div>
       </div>
     </div>
@@ -973,6 +1095,40 @@ defineExpose({
                 <label style="flex: 1;">
                   {{ $t('cropper.opacity') }}
                   <input type="range" min="0" max="100" step="1" v-model.number="tItem.opacity" style="width: 100%;" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="options-section">
+          <div class="option-label">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span>{{ $t('cropper.subtitles', 'Auto Subtitles') }}</span>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="subtitleEnabled">
+                <span>Enable</span>
+              </label>
+            </div>
+            
+            <div v-if="subtitleEnabled" class="text-controls" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%; margin-top: 1rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 8px;">
+              <div style="display: flex; gap: 0.5rem;">
+                <select v-model="subtitleFont" class="input-select" style="flex: 1;">
+                  <option v-for="font in fonts" :key="font" :value="font">{{ font }}</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-size: 0.8rem">Base</span>
+                  <input type="color" v-model="subtitleColor" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
+                </label>
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-size: 0.8rem">Highlight</span>
+                  <input type="color" v-model="subtitleHighlight" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
+                </label>
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-size: 0.8rem">Stroke</span>
+                  <input type="color" v-model="subtitleStroke" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
                 </label>
               </div>
             </div>
@@ -1184,6 +1340,36 @@ defineExpose({
 
 .text-overlay:active {
   cursor: grabbing;
+}
+
+.subtitle-overlay {
+  position: absolute;
+  border: 2px dashed var(--accent-neon);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: grab;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.subtitle-overlay:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.subtitle-overlay:active {
+  cursor: grabbing;
+}
+
+.subtitle-preview {
+  font-size: 2rem;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.2;
+  user-select: none;
+  pointer-events: none;
+  width: 100%;
 }
 
 .rotate-handle {

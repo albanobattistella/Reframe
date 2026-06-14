@@ -26,8 +26,8 @@ COPY backend/ /app/backend/
 # Copy Frontend Build
 COPY --from=frontend-builder /app/dist /app/frontend
 
-# Directories for uploads and exports
-RUN mkdir -p /app/uploads /app/exports
+# Directories for uploads, exports and models
+RUN mkdir -p /app/uploads /app/exports /app/models
 
 # Expose port
 EXPOSE 8080

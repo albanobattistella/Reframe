@@ -12,6 +12,8 @@ const emit = defineEmits<{
 const activeTab = ref('fonts')
 const staticFonts = ref<string[]>([])
 const customFonts = ref<string[]>([])
+const whisperModels = ref<string[]>([])
+const selectedWhisperModel = ref(localStorage.getItem('reframe_subtitle_model') || 'base')
 const isUploading = ref(false)
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -39,6 +41,20 @@ const fetchFonts = async () => {
   } catch (error) {
     console.error('Error fetching fonts:', error)
   }
+}
+
+const fetchWhisperModels = async () => {
+  try {
+    const response = await fetch('/api/whisper/models')
+    const data = await response.json()
+    whisperModels.value = data.models || []
+  } catch (error) {
+    console.error('Error fetching whisper models:', error)
+  }
+}
+
+const updateWhisperModel = () => {
+  localStorage.setItem('reframe_subtitle_model', selectedWhisperModel.value)
 }
 
 const triggerUpload = () => {
@@ -101,6 +117,7 @@ const deleteFont = async (fontName: string) => {
 
 onMounted(() => {
   fetchFonts()
+  fetchWhisperModels()
 })
 </script>
 
@@ -117,6 +134,13 @@ onMounted(() => {
               @click="activeTab = 'fonts'"
             >
               {{ $t('settings.fonts_category') }}
+            </button>
+            <button 
+              class="nav-btn" 
+              :class="{ active: activeTab === 'subtitles' }"
+              @click="activeTab = 'subtitles'"
+            >
+              Subtitles
             </button>
             <button 
               class="nav-btn" 
@@ -152,6 +176,21 @@ onMounted(() => {
             </div>
             <div v-else class="no-fonts">
               {{ $t('settings.no_fonts') }}
+            </div>
+          </div>
+
+          <div v-if="activeTab === 'subtitles'" class="tab-content">
+            <div class="tab-header">
+              <h3>Subtitles Configuration</h3>
+            </div>
+            <div class="settings-group">
+              <label class="setting-label">Whisper Model Size</label>
+              <select v-model="selectedWhisperModel" @change="updateWhisperModel" class="setting-select">
+                <option v-for="model in whisperModels" :key="model" :value="model">
+                  {{ model }}
+                </option>
+              </select>
+              <p class="setting-hint">Larger models are more accurate but slower to process.</p>
             </div>
           </div>
 
@@ -319,5 +358,37 @@ onMounted(() => {
 
 .close-btn:hover {
   color: var(--accent-neon);
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.setting-label {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.setting-select {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+}
+
+.setting-select:focus {
+  border-color: var(--accent-neon);
+}
+
+.setting-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 </style>

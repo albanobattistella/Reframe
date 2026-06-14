@@ -1,0 +1,45 @@
+INFO:     172.19.0.1:41586 - "GET /favicon.svg HTTP/1.1" 200 OK
+INFO:     172.19.0.1:40702 - "GET /favicon.svg HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:60966 - "GET /favicon.svg HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:34828 - "GET / HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34828 - "GET /assets/index-DcaRZ6qn.js HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34838 - "GET /assets/index-CZr9zDLO.css HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34852 - "GET /site.webmanifest HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34838 - "GET /web-app-manifest-512x512.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34828 - "GET /web-app-manifest-192x192.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34828 - "GET /api/fonts HTTP/1.1" 200 OK
+INFO:     172.19.0.1:34828 - "GET /api/fonts/Freedom-10eM/file HTTP/1.1" 200 OK
+INFO:     172.19.0.1:57498 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     172.19.0.1:42864 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     172.19.0.1:40554 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50194 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50194 - "GET /assets/index-DcaRZ6qn.js HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50194 - "GET /assets/index-CZr9zDLO.css HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50218 - "GET /site.webmanifest HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50206 - "GET /web-app-manifest-192x192.png HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50194 - "GET /web-app-manifest-512x512.png HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:50224 - "GET / HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /assets/index-DcaRZ6qn.js HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50228 - "GET /assets/index-CZr9zDLO.css HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50230 - "GET /site.webmanifest HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /web-app-manifest-192x192.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50228 - "GET /web-app-manifest-512x512.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50230 - "GET /site.webmanifest HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /web-app-manifest-192x192.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50228 - "GET /web-app-manifest-512x512.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50230 - "GET /site.webmanifest HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50230 - "GET /site.webmanifest HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50228 - "GET /web-app-manifest-512x512.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /web-app-manifest-192x192.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50228 - "GET /favicon.svg HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /apple-touch-icon.png HTTP/1.1" 200 OK
+INFO:     172.19.0.1:50224 - "GET /api/fonts HTTP/1.1" 200 OK
+INFO:     172.19.0.1:51774 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     172.19.0.1:52692 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:49502 - "GET /site.webmanifest HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:49508 - "GET /web-app-manifest-192x192.png HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:49524 - "GET /web-app-manifest-512x512.png HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:41120 - "POST /api/process HTTP/1.1" 200 OK
+INFO:     172.19.0.1:55558 - "GET /site.webmanifest HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:55568 - "GET /web-app-manifest-192x192.png HTTP/1.1" 304 Not Modified
+INFO:     172.19.0.1:55572 - "GET /web-app-manifest-512x512.png HTTP/1.1" 304 Not Modified

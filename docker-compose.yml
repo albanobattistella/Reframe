@@ -10,6 +10,7 @@ services:
       - ./media/uploads:/app/uploads
       - ./media/exports:/app/exports
       - ./media/fonts:/app/fonts
+      - ./media/models:/app/models
     restart: unless-stopped
     # Uncomment the following lines to enable AMD/Intel GPU support in Docker via VAAPI
     devices:

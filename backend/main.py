@@ -11,6 +11,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Optional
 from PIL import Image, ImageDraw, ImageFont
+import threading
+try:
+    from faster_whisper import WhisperModel
+except ImportError:
+    WhisperModel = None
 
 app = FastAPI(title="Reframe API")
 
@@ -26,11 +31,13 @@ app.add_middleware(
 UPLOAD_DIR = "/app/uploads" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "uploads")
 EXPORT_DIR = "/app/exports" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "exports")
 FONTS_DIR = "/app/fonts" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "fonts")
+MODELS_DIR = "/app/models" if os.environ.get("DOCKER") else os.path.join(os.getcwd(), "models")
 FRONTEND_DIR = "/app/frontend" if os.environ.get("DOCKER") else os.path.join(os.path.dirname(os.getcwd()), "frontend", "dist")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
 os.makedirs(FONTS_DIR, exist_ok=True)
+os.makedirs(MODELS_DIR, exist_ok=True)
 
 # State stores
 job_progress: Dict[str, int] = {}
@@ -65,6 +72,92 @@ def get_video_dimensions(filepath: str) -> tuple[int, int]:
         return int(w), int(h)
     except Exception:
         return 1920, 1080
+
+def hex_to_ass_color(hex_str: str) -> str:
+    hex_str = hex_str.lstrip('#')
+    if len(hex_str) == 6:
+        return f"&H00{hex_str[4:6]}{hex_str[2:4]}{hex_str[0:2]}&"
+    return "&H00FFFFFF&"
+
+def generate_tiktok_ass(
+    words: list, output_ass: str, cw: int, ch: int,
+    x: int, y: int, w: int, h: int, font_name: str, 
+    base_color: str, highlight_color: str, stroke_color: str
+):
+    ass_base_color = hex_to_ass_color(base_color)
+    ass_high_color = hex_to_ass_color(highlight_color)
+    ass_stroke_color = hex_to_ass_color(stroke_color)
+    
+    font_size = h // 2 if h > 20 else 40
+    
+    ass_content = [
+        "[Script Info]",
+        "ScriptType: v4.00+",
+        f"PlayResX: {cw}",
+        f"PlayResY: {ch}",
+        "WrapStyle: 1",
+        "",
+        "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        f"Style: Default,{font_name},{font_size},{ass_base_color},{ass_high_color},{ass_stroke_color},&H00000000&,-1,0,0,0,100,100,0,0,1,3,2,5,0,0,0,1",
+        "",
+        "[Events]",
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
+    ]
+    
+    center_x = x + w // 2
+    center_y = y + h // 2
+    
+    def format_time(seconds: float) -> str:
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = seconds % 60
+        return f"{h:01d}:{m:02d}:{s:05.2f}"
+    
+    chunk_size = 3
+    for i in range(0, len(words), chunk_size):
+        chunk = words[i:i+chunk_size]
+        if not chunk: continue
+        
+        chunk_start = chunk[0].start
+        chunk_end = chunk[-1].end
+        
+        for j, active_word in enumerate(chunk):
+            start_t = active_word.start
+            end_t = active_word.end if j < len(chunk)-1 else chunk_end
+            
+            text_parts = []
+            for k, w_obj in enumerate(chunk):
+                word_text = w_obj.word.strip()
+                if k == j:
+                    text_parts.append(f"{{\\c{ass_high_color}}}{word_text}{{\\c{ass_base_color}}}")
+                else:
+                    text_parts.append(word_text)
+            
+            full_text = f"{{\\pos({center_x},{center_y})}}" + " ".join(text_parts)
+            ass_content.append(f"Dialogue: 0,{format_time(start_t)},{format_time(end_t)},Default,,0,0,0,,{full_text}")
+            
+    with open(output_ass, 'w', encoding='utf-8') as f:
+        f.write("\n".join(ass_content))
+
+def transcribe_audio(input_file: str, model_size: str):
+    if not WhisperModel: return []
+    
+    import av
+    try:
+        with av.open(input_file) as container:
+            if not any(s.type == 'audio' for s in container.streams):
+                return []
+    except Exception:
+        return []
+        
+    model = WhisperModel(model_size, device="cpu", compute_type="int8", download_root=MODELS_DIR)
+    segments, _ = model.transcribe(input_file, word_timestamps=True)
+    words = []
+    for segment in segments:
+        for word in segment.words:
+            words.append(word)
+    return words
 
 def create_text_image(t_item: dict, output_path: str, cw: int) -> tuple[int, int]:
     try:
@@ -174,7 +267,8 @@ async def process_video_ffmpeg(
     textYs: List[int] = None,
     textWs: List[int] = None,
     textHs: List[int] = None,
-    textRotations: List[float] = None
+    textRotations: List[float] = None,
+    subtitle_ass_path: str = None
 ):
     logo_paths = logo_paths or []
     logoXs = logoXs or []
@@ -208,14 +302,19 @@ async def process_video_ffmpeg(
     
     if useGpu == "true":
         cmd.extend(["-vaapi_device", "/dev/dri/renderD128"])
-    
+        
     if trimStart is not None and trimStart > 0:
         cmd.extend(["-ss", str(trimStart)])
     if trimEnd is not None and trimEnd > 0:
-        cmd.extend(["-to", str(trimEnd)])
+        cmd.extend(["-t", str(trimEnd)])
         
     cmd.extend(["-i", input_path])
     
+    # Ensure dimensions are even for libx264
+    w = w - (w % 2)
+    h = h - (h % 2)
+    x = max(0, x)
+    y = max(0, y)
     filters = [f"[0:v]crop={w}:{h}:{x}:{y}[bg]"]
     current_bg = "[bg]"
     input_idx = 1
@@ -271,18 +370,29 @@ async def process_video_ffmpeg(
         input_idx += 1
         
     if current_bg != "[bg]":
+        if subtitle_ass_path and os.path.exists(subtitle_ass_path):
+            filters.append(f"{current_bg}ass='{subtitle_ass_path}'[hw_with_subs]")
+            current_bg = "[hw_with_subs]"
+
         if useGpu == "true":
             filters.append(f"{current_bg}format=nv12,hwupload[hw]")
             current_bg = "[hw]"
+            
         filter_str = "; ".join(filters)
         cmd.extend(["-filter_complex", filter_str, "-map", current_bg])
         if muteAudio != "true":
             cmd.extend(["-map", "0:a?"])
     else:
-        if useGpu == "true":
-            cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},format=nv12,hwupload"])
+        if subtitle_ass_path and os.path.exists(subtitle_ass_path):
+            if useGpu == "true":
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}',format=nv12,hwupload"])
+            else:
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}'"])
         else:
-            cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y}"])
+            if useGpu == "true":
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},format=nv12,hwupload"])
+            else:
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y}"])
         
     if useGpu == "true":
         cmd.extend(["-c:v", "h264_vaapi", "-qp", qp])
@@ -304,12 +414,14 @@ async def process_video_ffmpeg(
     
     time_regex = re.compile(r"time=(\d{2}):(\d{2}):(\d{2}\.\d{2})")
     
+    stderr_log = []
     while True:
         line = await process.stderr.readline()
         if not line:
             break
         
         line_str = line.decode('utf-8')
+        stderr_log.append(line_str)
         match = time_regex.search(line_str)
         if match and duration > 0:
             hrs, mins, secs = match.groups()
@@ -337,6 +449,8 @@ async def process_video_ffmpeg(
                 except:
                     pass
     else:
+        full_err = "".join(stderr_log)
+        print(f"FFMPEG ERROR:\n{full_err}", flush=True)
         job_status[job_id] = "error"
         if job_id in active_connections:
             for ws in active_connections[job_id]:
@@ -344,6 +458,50 @@ async def process_video_ffmpeg(
                     await ws.send_json({"progress": 0, "status": "error", "detail": "FFmpeg failed"})
                 except:
                     pass
+
+async def process_video_pipeline(
+    job_id: str, input_path: str, output_path: str, 
+    x: int, y: int, w: int, h: int, quality: str, muteAudio: str, useGpu: str,
+    trimStart: float, trimEnd: float, logo_paths: list, logoXs: list, logoYs: list, 
+    logoWs: list, logoHs: list, logoRotations: list, logoOpacities: list,
+    text_paths: list, textXs: list, textYs: list, textWs: list, textHs: list, textRotations: list,
+    subtitleEnabled: str, subtitleModel: str, subtitleFont: str, subtitleColor: str, 
+    subtitleHighlight: str, subtitleStroke: str, subtitleX: int, subtitleY: int, 
+    subtitleW: int, subtitleH: int
+):
+    try:
+        subtitle_ass_path = None
+        if subtitleEnabled == "true":
+            job_status[job_id] = "transcribing"
+            if job_id in active_connections:
+                for ws in active_connections[job_id]:
+                    try: await ws.send_json({"progress": 0, "status": "transcribing"})
+                    except: pass
+                    
+            words = await asyncio.to_thread(transcribe_audio, input_path, subtitleModel)
+            
+            if words:
+                subtitle_ass_path = os.path.join(UPLOAD_DIR, f"{job_id}_subs.ass")
+                generate_tiktok_ass(
+                    words, subtitle_ass_path, w, h,
+                    subtitleX, subtitleY, subtitleW, subtitleH,
+                    subtitleFont, subtitleColor, subtitleHighlight, subtitleStroke
+                )
+                
+        await process_video_ffmpeg(
+            job_id, input_path, output_path, x, y, w, h, quality, muteAudio, useGpu,
+            trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
+            text_paths, textXs, textYs, textWs, textHs, textRotations, subtitle_ass_path
+        )
+    except Exception as e:
+        import traceback
+        print(f"Pipeline error: {e}", flush=True)
+        traceback.print_exc()
+        job_status[job_id] = "error"
+        if job_id in active_connections:
+            for ws in active_connections[job_id]:
+                try: await ws.send_json({"progress": 0, "status": "error", "detail": str(e)})
+                except: pass
 
 @app.post("/api/process")
 async def process_video(
@@ -369,7 +527,17 @@ async def process_video(
     textYs: List[int] = Form([]),
     textWs: List[int] = Form([]),
     textHs: List[int] = Form([]),
-    textRotations: List[float] = Form([])
+    textRotations: List[float] = Form([]),
+    subtitleEnabled: str = Form("false"),
+    subtitleModel: str = Form("base"),
+    subtitleFont: str = Form("Arial"),
+    subtitleColor: str = Form("#ffffff"),
+    subtitleHighlight: str = Form("#ffff00"),
+    subtitleStroke: str = Form("#000000"),
+    subtitleX: int = Form(0),
+    subtitleY: int = Form(0),
+    subtitleW: int = Form(0),
+    subtitleH: int = Form(0)
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -407,11 +575,13 @@ async def process_video(
     output_filename = f"{job_id}_out.mp4"
     output_path = os.path.join(EXPORT_DIR, output_filename)
     
-    asyncio.create_task(process_video_ffmpeg(
+    asyncio.create_task(process_video_pipeline(
         job_id, input_path, output_path, 
         x, y, width, height, quality, muteAudio, useGpu,
         trimStart, trimEnd, logo_paths, logoXs, logoYs, logoWs, logoHs, logoRotations, logoOpacities,
-        text_paths, textXs, textYs, textWs, textHs, textRotations
+        text_paths, textXs, textYs, textWs, textHs, textRotations,
+        subtitleEnabled, subtitleModel, subtitleFont, subtitleColor, subtitleHighlight,
+        subtitleStroke, subtitleX, subtitleY, subtitleW, subtitleH
     ))
     
     return {"job_id": job_id}
@@ -640,6 +810,12 @@ async def upload_font(file: UploadFile = File(...)):
         f.write(content)
         
     return {"status": "success", "font": os.path.splitext(file.filename)[0]}
+
+@app.get("/api/whisper/models")
+async def get_whisper_models():
+    return {
+        "models": ["tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v3"]
+    }
 
 @app.get("/api/fonts/{font_name}/file")
 async def get_font_file(font_name: str):
