@@ -56,3 +56,14 @@ Once running, open `http://localhost:8080` in your browser.
 
 - [ ] **Smart Tracking:** Auto-crop using YOLOv8 face detection to keep the subject centered.
 - [ ] **Audio Normalization:** Auto-adjust volume for social platforms.
+
+## Support the Project ☕
+
+If you find Reframe useful and would like to support its continued development, donations are greatly appreciated! 
+
+**Crypto Addresses:**
+- **BTC:** `bc1qytee2a0z2tg4k4zdtqj08zpellkrecrgdgg36z`
+- **ETH:** `0x49372575383aEA56b78524C4FD0873DE1175e9be`
+- **LTC:** `ltc1qk2pe4srtcjt2cnnp5fcfvmknwckjus9ge8v5p9`
+
+Alternatively, you can [Buy Me a Coffee](https://www.buymeacoffee.com/gurkenwerfer). Thank you! 💖

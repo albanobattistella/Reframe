@@ -31,7 +31,23 @@ const copiedWallet = ref<string | null>(null)
 
 const copyWallet = async (name: string, address: string) => {
   try {
-    await navigator.clipboard.writeText(address)
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(address)
+    } else {
+      const textArea = document.createElement('textarea')
+      textArea.value = address
+      textArea.style.position = 'absolute'
+      textArea.style.left = '-999999px'
+      document.body.prepend(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+      } catch (error) {
+        console.error('Fallback copy failed', error)
+      } finally {
+        textArea.remove()
+      }
+    }
     copiedWallet.value = name
     setTimeout(() => {
       copiedWallet.value = null
