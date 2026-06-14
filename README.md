@@ -1,48 +1,35 @@
 # Reframe 🎬📐
 
-The ultimate self-hosted video toolkit for content creators and social media managers.
+Reframe is a self-hosted web app for cropping and formatting videos for social media. If you have 16:9 recordings, streams, or clips, you can use Reframe to quickly convert them to 9:16 (TikTok/Reels), 1:1 (Instagram), or other formats. 
 
-**Reframe** is a lightweight, Docker-based web application that lets you easily crop, trim, and format your videos (e.g., 16:9 recordings, streams, or clips) for social media platforms (9:16 Reels/TikTok, 1:1 Instagram Feed, etc.) in a flash. Completely local, no cloud dependencies, and with full control over your data.
+Everything runs locally via Docker, so your files never leave your machine.
 
 ![Reframe Screenshot](./assets/reframe-screenshot.png)
 
----
+## Features
 
-## 🔥 Features
+- **Cropping & Formatting:** Web UI to set up your video crop. Includes presets for 9:16, 1:1, 4:5, and custom aspect ratios.
+- **Batch Processing:** Apply the exact same crop, trim, and overlay settings to multiple videos at once.
+- **Scripting API:** A REST endpoint (`/api/automate`) lets you trigger video processing programmatically by sending JSON configurations.
+- **Import/Export:** Save your settings as a preset file and load them later.
+- **Asset Browser:** Manage, view, and delete your uploaded or exported videos directly in the UI.
+- **Custom Fonts:** Upload `.ttf` and `.otf` files through the app to use them in text overlays.
+- **Watermarks & Overlays:** Add logos or text (with adjustable colors and drop shadows) to your videos.
+- **Trimming:** Cut the start and end of your video.
+- **Hardware Acceleration:** Uses FFmpeg with GPU support for faster exports.
+- **Localization:** UI supports English, German, Spanish, and French.
+- **Dark Mode:** Toggles between light and dark themes.
 
-* **Visual Cropping & Formatting**: Drop your video in and choose the perfect crop. Includes presets for:
-  * `9:16` (TikTok, YouTube Shorts, Instagram Reels)
-  * `1:1` (Instagram Feed, LinkedIn)
-  * `4:5` (Instagram Portrait)
-  * `Custom` (Freeform aspect ratio)
-* **Batch Processing**: Need to process multiple videos? Use the batch processor to apply crop, trim, and overlay settings to all videos at once!
-* **CLI API for Scripting**: Seamlessly integrate Reframe into your automated workflows. Use the `/api/automate` REST endpoint to process videos programmatically using JSON configurations and scripts.
-* **Format Export & Import**: Dialed in the perfect settings? Export your configuration as a preset file and import it later so you don't have to start from scratch.
-* **Built-in Asset Browser**: Manage, view, and bulk-delete your uploaded media and exported videos right within the app using the integrated asset browser.
-* **Custom Fonts Integration**: Upload your own `.ttf` and `.otf` fonts directly from the UI and use them seamlessly in your videos.
-* **Watermarks & Overlays**: Add your custom logo or watermark. You can also add custom text overlays with adjustable fonts, colors, and drop shadows!
-* **Video Trimming**: Precisely trim the start and end times of your videos.
-* **Hardware Acceleration (GPU)**: Leverage hardware acceleration for blazing-fast exports.
-* **Multi-Language Support**: Available in English, German, Spanish, and French.
-* **Light & Dark Mode**: A beautiful, modern UI that seamlessly switches between light and dark mode based on your preference.
-* **100% Self-Hosted & Local**: FFmpeg powerhouse running locally on your hardware. No external APIs, no data spying, no subscriptions.
+## Tech Stack
 
----
+- **Backend:** Python / FastAPI
+- **Processing:** FFmpeg
+- **Frontend:** Vue 3 / Vite
+- **Deployment:** Docker & Docker Compose
 
-## 🛠 Tech Stack
+## Quick Start
 
-Built for maximum performance and a simple, maintainable codebase:
-
-* **Backend:** Python with **FastAPI** (asynchronous API endpoints for fast file handling)
-* **Video Processing:** **FFmpeg** (the gold standard for video manipulation)
-* **Frontend:** Built with **Vue 3** + Vite for a sleek, responsive UI
-* **Deployment:** **Docker** & **Docker Compose**
-
----
-
-## 🚀 Quick Start (Docker Compose)
-
-Get up and running with a single `docker-compose.yml`:
+You can start the Reframe container using the following `docker-compose.yml`:
 
 ```yaml
 version: '3.8'
@@ -60,10 +47,10 @@ services:
     restart: unless-stopped
 ```
 
----
+Once running, open `http://localhost:8080` in your browser.
 
-## 🗺️ Roadmap / Planned Features
+## Roadmap
 
-* [ ] **Smart Tracking (AI Auto-Crop):** Automatic face detection via YOLOv8 to keep the subject in focus.
-* [ ] **Local Subtitles (Whisper Integration):** AI-generated subtitles baked directly into the video.
-* [ ] **Audio Normalization:** Automatic volume adjustment for social media.
+- [ ] **Smart Tracking:** Auto-crop using YOLOv8 face detection to keep the subject centered.
+- [ ] **Local Subtitles:** Whisper integration for baked-in subtitles.
+- [ ] **Audio Normalization:** Auto-adjust volume for social platforms.
