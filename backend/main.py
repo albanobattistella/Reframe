@@ -166,7 +166,11 @@ def transcribe_audio(input_file: str, model_size: str, log_callback=None):
         return []
         
     def run_model():
+        if log_callback:
+            log_callback(f"Downloading Model: {model_size}...\n")
         model = WhisperModel(model_size, device="cpu", compute_type="int8", download_root=MODELS_DIR)
+        if log_callback:
+            log_callback(f"Transcribing audio...\n")
         segments, _ = model.transcribe(input_file, word_timestamps=True)
         words = []
         for segment in segments:
@@ -392,7 +396,7 @@ async def process_video_ffmpeg(
         
     if current_bg != "[bg]":
         if subtitle_ass_path and os.path.exists(subtitle_ass_path):
-            filters.append(f"{current_bg}ass='{subtitle_ass_path}'[hw_with_subs]")
+            filters.append(f"{current_bg}ass='{subtitle_ass_path}':fontsdir='{FONTS_DIR}'[hw_with_subs]")
             current_bg = "[hw_with_subs]"
 
         if useGpu == "true":
@@ -406,9 +410,9 @@ async def process_video_ffmpeg(
     else:
         if subtitle_ass_path and os.path.exists(subtitle_ass_path):
             if useGpu == "true":
-                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}',format=nv12,hwupload"])
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}':fontsdir='{FONTS_DIR}',format=nv12,hwupload"])
             else:
-                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}'"])
+                cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},ass='{subtitle_ass_path}':fontsdir='{FONTS_DIR}'"])
         else:
             if useGpu == "true":
                 cmd.extend(["-vf", f"crop={w}:{h}:{x}:{y},format=nv12,hwupload"])
