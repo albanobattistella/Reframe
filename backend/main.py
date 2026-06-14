@@ -537,10 +537,16 @@ async def process_video_pipeline(
                 subtitle_ass_path = os.path.join(UPLOAD_DIR, f"{job_id}_subs.ass")
                 
                 ass_font_name = subtitleFont
-                if subtitleFont.endswith(('.ttf', '.otf', '.woff', '.woff2')):
-                    font_path = os.path.join(FONTS_DIR, subtitleFont)
+                
+                possible_paths = [
+                    os.path.join(FONTS_DIR, f"{subtitleFont}.ttf"),
+                    os.path.join(FONTS_DIR, f"{subtitleFont}.otf"),
+                    os.path.join(FONTS_DIR, subtitleFont)
+                ]
+                for font_path in possible_paths:
                     if os.path.exists(font_path):
                         ass_font_name = get_font_family_name(font_path, subtitleFont)
+                        break
                 
                 generate_tiktok_ass(
                     words, subtitle_ass_path, w, h,
