@@ -103,6 +103,9 @@ def generate_tiktok_ass(
     ass_high_color = hex_to_ass_color(highlight_color)
     ass_stroke_color = hex_to_ass_color(stroke_color)
     
+    outline_size = max(1, int(font_size * 0.05))
+    shadow_size = max(1, int(font_size * 0.05))
+    
     ass_content = [
         "[Script Info]",
         "ScriptType: v4.00+",
@@ -112,7 +115,7 @@ def generate_tiktok_ass(
         "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Default,{font_name},{font_size},{ass_base_color},{ass_high_color},{ass_stroke_color},&H00000000&,-1,0,0,0,100,100,0,0,1,3,2,5,0,0,0,1",
+        f"Style: Default,{font_name},{font_size},{ass_base_color},{ass_high_color},{ass_stroke_color},&H00000000&,-1,0,0,0,100,100,0,0,1,{outline_size},{shadow_size},5,0,0,0,1",
         "",
         "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"

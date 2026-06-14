@@ -1002,8 +1002,14 @@ defineExpose({
             }"
             @mousedown="startSubtitleDrag($event)"
           >
-            <div class="subtitle-preview" :style="{ fontFamily: subtitleFont, color: subtitleColor, fontSize: `${subtitleFontSize}px` }">
-              <span class="preview-text" :style="{ textShadow: `2px 2px 0 ${subtitleStroke}, -2px -2px 0 ${subtitleStroke}, 2px -2px 0 ${subtitleStroke}, -2px 2px 0 ${subtitleStroke}` }">
+            <div class="subtitle-preview" :style="{ 
+              fontFamily: subtitleFont, 
+              color: subtitleColor, 
+              fontSize: `${subtitleFontSize}px`,
+              WebkitTextStroke: `${Math.max(1, subtitleFontSize * 0.1)}px ${subtitleStroke}`,
+              textShadow: `${Math.max(1, subtitleFontSize * 0.05)}px ${Math.max(1, subtitleFontSize * 0.05)}px 0 rgba(0,0,0,0.8)`
+            }">
+              <span class="preview-text">
                 Tiktok <span :style="{ color: subtitleHighlight }">Subtitle</span>
               </span>
             </div>
@@ -1473,12 +1479,13 @@ defineExpose({
 }
 
 .subtitle-preview {
-  font-weight: 900;
+  font-weight: bold;
   text-align: center;
   line-height: 1.2;
   user-select: none;
   pointer-events: none;
   width: 100%;
+  paint-order: stroke fill;
 }
 
 .rotate-handle {
