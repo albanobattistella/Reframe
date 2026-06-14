@@ -81,6 +81,19 @@ def hex_to_ass_color(hex_str: str) -> str:
         return f"&H00{hex_str[4:6]}{hex_str[2:4]}{hex_str[0:2]}&"
     return "&H00FFFFFF&"
 
+def get_font_family_name(font_path: str, default_name: str) -> str:
+    try:
+        result = subprocess.run(
+            ["fc-query", "-f", "%{family}\\n", font_path],
+            capture_output=True, text=True, check=True
+        )
+        family_names = result.stdout.strip()
+        if family_names:
+            return family_names.split(",")[0]
+    except Exception:
+        pass
+    return default_name
+
 def generate_tiktok_ass(
     words: list, output_ass: str, cw: int, ch: int,
     x: int, y: int, w: int, h: int, font_name: str, 
@@ -522,10 +535,17 @@ async def process_video_pipeline(
             
             if words:
                 subtitle_ass_path = os.path.join(UPLOAD_DIR, f"{job_id}_subs.ass")
+                
+                ass_font_name = subtitleFont
+                if subtitleFont.endswith(('.ttf', '.otf', '.woff', '.woff2')):
+                    font_path = os.path.join(FONTS_DIR, subtitleFont)
+                    if os.path.exists(font_path):
+                        ass_font_name = get_font_family_name(font_path, subtitleFont)
+                
                 generate_tiktok_ass(
                     words, subtitle_ass_path, w, h,
                     subtitleX, subtitleY, subtitleW, subtitleH,
-                    subtitleFont, subtitleColor, subtitleHighlight, subtitleStroke
+                    ass_font_name, subtitleColor, subtitleHighlight, subtitleStroke
                 )
                 
         await process_video_ffmpeg(
