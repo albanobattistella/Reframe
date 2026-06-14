@@ -146,6 +146,9 @@ const subtitleDragStartY = ref(0)
 const subtitleDragStartLeft = ref(0)
 const subtitleDragStartTop = ref(0)
 
+const subtitleOverlayRef = ref<HTMLElement | null>(null)
+let subtitleObserver: ResizeObserver | null = null
+
 const startSubtitleDrag = (e: MouseEvent) => {
   e.stopPropagation()
   isSubtitleDragging.value = true
@@ -169,35 +172,6 @@ const endSubtitleDrag = () => {
   isSubtitleDragging.value = false
   window.removeEventListener('mousemove', onSubtitleDrag)
   window.removeEventListener('mouseup', endSubtitleDrag)
-}
-
-const isSubtitleResizing = ref(false)
-const subtitleResizeStartW = ref(0)
-const subtitleResizeStartH = ref(0)
-
-const startSubtitleResize = (e: MouseEvent) => {
-  e.stopPropagation()
-  isSubtitleResizing.value = true
-  subtitleDragStartX.value = e.clientX
-  subtitleDragStartY.value = e.clientY
-  subtitleResizeStartW.value = subtitleW.value
-  subtitleResizeStartH.value = subtitleH.value
-  window.addEventListener('mousemove', onSubtitleResize)
-  window.addEventListener('mouseup', endSubtitleResize)
-}
-
-const onSubtitleResize = (e: MouseEvent) => {
-  if (!isSubtitleResizing.value) return
-  const dx = e.clientX - subtitleDragStartX.value
-  const dy = e.clientY - subtitleDragStartY.value
-  subtitleW.value = Math.max(50, subtitleResizeStartW.value + dx)
-  subtitleH.value = Math.max(20, subtitleResizeStartH.value + dy)
-}
-
-const endSubtitleResize = () => {
-  isSubtitleResizing.value = false
-  window.removeEventListener('mousemove', onSubtitleResize)
-  window.removeEventListener('mouseup', endSubtitleResize)
 }
 
 const fonts = ref<string[]>([
@@ -816,9 +790,26 @@ const applySettings = (settings: any, options?: any) => {
 // Resize observer to handle layout shifts robustly
 let resizeObserver: ResizeObserver | null = null
 
+watch(subtitleOverlayRef, (el) => {
+  if (subtitleObserver) {
+    subtitleObserver.disconnect()
+    if (el) subtitleObserver.observe(el)
+  }
+})
+
 onMounted(() => {
   fetchFonts()
   window.addEventListener('fonts-updated', fetchFonts)
+  
+  subtitleObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.target === subtitleOverlayRef.value) {
+        subtitleW.value = (entry.target as HTMLElement).offsetWidth
+        subtitleH.value = (entry.target as HTMLElement).offsetHeight
+      }
+    }
+  })
+
   if (containerRef.value) {
     resizeObserver = new ResizeObserver(() => {
       initializeCropBox()
@@ -831,6 +822,9 @@ onUnmounted(() => {
   window.removeEventListener('fonts-updated', fetchFonts)
   if (resizeObserver) {
     resizeObserver.disconnect()
+  }
+  if (subtitleObserver) {
+    subtitleObserver.disconnect()
   }
 })
 
@@ -996,14 +990,15 @@ defineExpose({
           </div>
           
           <!-- Subtitle Overlay -->
-          <div 
+          <div
             v-if="subtitleEnabled"
             class="subtitle-overlay"
+            ref="subtitleOverlayRef"
             :style="{
               left: `${subtitleX}px`,
               top: `${subtitleY}px`,
-              width: `${subtitleW}px`,
-              height: `${subtitleH}px`
+              width: 'max-content',
+              height: 'max-content'
             }"
             @mousedown="startSubtitleDrag($event)"
           >
@@ -1012,7 +1007,6 @@ defineExpose({
                 Tiktok <span :style="{ color: subtitleHighlight }">Subtitle</span>
               </span>
             </div>
-            <div class="resize-handle" @mousedown.stop="startSubtitleResize($event)">⤡</div>
           </div>
         </div>
       </div>
@@ -1468,7 +1462,6 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 
 .subtitle-overlay:hover {
