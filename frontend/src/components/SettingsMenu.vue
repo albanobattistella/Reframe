@@ -13,6 +13,7 @@ const activeTab = ref('fonts')
 const staticFonts = ref<string[]>([])
 const customFonts = ref<string[]>([])
 const whisperModels = ref<string[]>([])
+const downloadedModels = ref<any[]>([])
 const selectedWhisperModel = ref(localStorage.getItem('reframe_subtitle_model') || 'base')
 const isUploading = ref(false)
 
@@ -115,9 +116,34 @@ const deleteFont = async (fontName: string) => {
   }
 }
 
+const fetchDownloadedModels = async () => {
+  try {
+    const response = await fetch('/api/models')
+    const data = await response.json()
+    downloadedModels.value = data.models || []
+  } catch (error) {
+    console.error('Error fetching downloaded models:', error)
+  }
+}
+
+const deleteDownloadedModel = async (modelId: string) => {
+  if (!confirm(`Are you sure you want to delete ${modelId}?`)) return
+  try {
+    const response = await fetch(`/api/models/${encodeURIComponent(modelId)}`, { method: 'DELETE' })
+    if (response.ok) {
+      await fetchDownloadedModels()
+    } else {
+      alert('Failed to delete model')
+    }
+  } catch (error) {
+    console.error('Delete error:', error)
+  }
+}
+
 onMounted(() => {
   fetchFonts()
   fetchWhisperModels()
+  fetchDownloadedModels()
 })
 </script>
 
@@ -141,6 +167,13 @@ onMounted(() => {
               @click="activeTab = 'subtitles'"
             >
               Subtitles
+            </button>
+            <button 
+              class="nav-btn" 
+              :class="{ active: activeTab === 'models' }"
+              @click="activeTab = 'models'"
+            >
+              Model Manager
             </button>
             <button 
               class="nav-btn" 
@@ -191,6 +224,31 @@ onMounted(() => {
                 </option>
               </select>
               <p class="setting-hint">Larger models are more accurate but slower to process.</p>
+            </div>
+          </div>
+
+          <div v-if="activeTab === 'models'" class="tab-content">
+            <div class="tab-header">
+              <h3>Model Manager</h3>
+            </div>
+            <div class="fonts-list" v-if="downloadedModels.length > 0">
+              <div v-for="model in downloadedModels" :key="model.id" class="font-item">
+                <div style="display: flex; flex-direction: column;">
+                  <span class="font-name" style="font-weight: bold; margin-bottom: 4px;">{{ model.name }}</span>
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Size: {{ model.size_str }}</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" @click="deleteDownloadedModel(model.id)" title="Delete model">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5f56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div v-else class="no-fonts">
+              No models downloaded yet.
             </div>
           </div>
 

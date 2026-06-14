@@ -654,7 +654,7 @@ const exportVideo = async (): Promise<void> => {
         if (msg.log) {
           logs.value.push(msg.log)
           
-          if (msg.log.includes('Downloading')) {
+          if (msg.log.includes('%|') || msg.log.includes('Downloading')) {
             const match = msg.log.match(/(\d+%)/)
             if (match) latestLogText.value = `Downloading Model... ${match[1]}`
             else latestLogText.value = 'Downloading Model...'

@@ -5,7 +5,9 @@ import uuid
 import subprocess
 import json
 import base64
-from fastapi import FastAPI, UploadFile, Form, File, WebSocket, WebSocketDisconnect
+import math
+import shutil
+from fastapi import FastAPI, UploadFile, Form, File, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -880,6 +882,70 @@ async def delete_font(font_name: str):
                 return {"status": "success"}
     return JSONResponse(status_code=404, content={"detail": "Font not found"})
 
+@app.get("/api/fonts")
+async def get_fonts():
+    fonts = [f for f in os.listdir(FONTS_DIR) if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2'))]
+    return JSONResponse(content={"fonts": fonts})
+
+def get_dir_size(path='.'):
+    total = 0
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_dir_size(entry.path)
+    return total
+
+def format_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_name[i]}"
+
+@app.get("/api/models")
+async def list_models():
+    if not os.path.exists(MODELS_DIR):
+        return {"models": []}
+        
+    models = []
+    for item in os.listdir(MODELS_DIR):
+        item_path = os.path.join(MODELS_DIR, item)
+        if os.path.isdir(item_path) and item.startswith("models--"):
+            parts = item.split("--")
+            name = parts[-1] if len(parts) >= 3 else item
+            
+            size_bytes = get_dir_size(item_path)
+            size_str = format_size(size_bytes)
+            
+            models.append({
+                "id": item,
+                "name": name,
+                "size_bytes": size_bytes,
+                "size_str": size_str
+            })
+            
+    models.sort(key=lambda x: x["size_bytes"], reverse=True)
+    return {"models": models}
+
+@app.delete("/api/models/{model_id}")
+async def delete_model(model_id: str):
+    if not model_id.startswith("models--") or ".." in model_id:
+        raise HTTPException(status_code=400, detail="Invalid model ID")
+        
+    model_path = os.path.join(MODELS_DIR, model_id)
+    if os.path.exists(model_path) and os.path.isdir(model_path):
+        try:
+            shutil.rmtree(model_path)
+            return {"status": "success"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    else:
+        raise HTTPException(status_code=404, detail="Model not found")
+
 # Try to serve frontend statically if the directory exists
 # This is useful for production (Docker)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
@@ -887,4 +953,3 @@ app.mount("/exports", StaticFiles(directory=EXPORT_DIR), name="exports")
 
 if os.path.exists(FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
-
