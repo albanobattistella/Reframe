@@ -1137,7 +1137,7 @@ defineExpose({
               <span>{{ $t('cropper.subtitles', 'Auto Subtitles') }}</span>
               <label class="checkbox-label">
                 <input type="checkbox" v-model="subtitleEnabled">
-                <span>Enable</span>
+                <span>{{ $t('cropper.enable', 'Enable') }}</span>
               </label>
             </div>
             
@@ -1149,21 +1149,21 @@ defineExpose({
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                 <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
-                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Font Size</span>
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ $t('cropper.font_size', 'Font Size') }}</span>
                   <input type="range" v-model.number="subtitleFontSize" min="10" max="150" />
                 </label>
               </div>
               <div style="display: flex; gap: 1rem; align-items: center;">
                 <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
-                  <span style="font-size: 0.8rem">Base</span>
+                  <span style="font-size: 0.8rem">{{ $t('cropper.subtitle_base', 'Base') }}</span>
                   <input type="color" v-model="subtitleColor" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
                 </label>
                 <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
-                  <span style="font-size: 0.8rem">Highlight</span>
+                  <span style="font-size: 0.8rem">{{ $t('cropper.subtitle_highlight', 'Highlight') }}</span>
                   <input type="color" v-model="subtitleHighlight" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
                 </label>
                 <label style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
-                  <span style="font-size: 0.8rem">Stroke</span>
+                  <span style="font-size: 0.8rem">{{ $t('cropper.subtitle_stroke', 'Stroke') }}</span>
                   <input type="color" v-model="subtitleStroke" style="height: 38px; width: 100%; border: 1px solid var(--glass-border); border-radius: 4px; background: transparent; cursor: pointer;" />
                 </label>
               </div>

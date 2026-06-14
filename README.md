@@ -13,10 +13,12 @@ Everything runs locally via Docker, so your files never leave your machine.
 - **Scripting API:** A REST endpoint (`/api/automate`) lets you trigger video processing programmatically by sending JSON configurations.
 - **Import/Export:** Save your settings as a preset file and load them later.
 - **Asset Browser:** Manage, view, and delete your uploaded or exported videos directly in the UI.
-- **Custom Fonts:** Upload `.ttf` and `.otf` files through the app to use them in text overlays.
+- **Custom Fonts:** Upload `.ttf` and `.otf` files through the app to use them in text overlays and subtitles.
+- **Auto-Subtitles (Whisper AI):** Automatically generate dynamic, TikTok-style word-by-word subtitles with customizable fonts, stroke, and highlight colors.
+- **Model Manager:** Download and manage local Whisper AI models directly from the UI for fully offline transcription.
 - **Watermarks & Overlays:** Add logos or text (with adjustable colors and drop shadows) to your videos.
 - **Trimming:** Cut the start and end of your video.
-- **Hardware Acceleration:** Uses FFmpeg with GPU support for faster exports.
+- **Hardware Acceleration:** Uses FFmpeg with GPU support for faster exports and Whisper transcription.
 - **Localization:** UI supports English, German, Spanish, and French.
 - **Dark Mode:** Toggles between light and dark themes.
 
@@ -44,6 +46,7 @@ services:
       - ./media/uploads:/app/uploads
       - ./media/exports:/app/exports
       - ./media/fonts:/app/fonts
+      - ./media/models:/app/models
     restart: unless-stopped
 ```
 
@@ -52,5 +55,4 @@ Once running, open `http://localhost:8080` in your browser.
 ## Roadmap
 
 - [ ] **Smart Tracking:** Auto-crop using YOLOv8 face detection to keep the subject centered.
-- [ ] **Local Subtitles:** Whisper integration for baked-in subtitles.
 - [ ] **Audio Normalization:** Auto-adjust volume for social platforms.

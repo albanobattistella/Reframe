@@ -166,14 +166,14 @@ onMounted(() => {
               :class="{ active: activeTab === 'subtitles' }"
               @click="activeTab = 'subtitles'"
             >
-              Subtitles
+              {{ $t('settings.subtitles_category', 'Subtitles') }}
             </button>
             <button 
               class="nav-btn" 
               :class="{ active: activeTab === 'models' }"
               @click="activeTab = 'models'"
             >
-              Model Manager
+              {{ $t('settings.models_category', 'Models') }}
             </button>
             <button 
               class="nav-btn" 
@@ -214,30 +214,30 @@ onMounted(() => {
 
           <div v-if="activeTab === 'subtitles'" class="tab-content">
             <div class="tab-header">
-              <h3>Subtitles Configuration</h3>
+              <h3>{{ $t('settings.subtitles_config', 'Subtitles Configuration') }}</h3>
             </div>
             <div class="settings-group">
-              <label class="setting-label">Whisper Model Size</label>
+              <label class="setting-label">{{ $t('settings.whisper_model', 'Whisper Model Size') }}</label>
               <select v-model="selectedWhisperModel" @change="updateWhisperModel" class="setting-select">
                 <option v-for="model in whisperModels" :key="model" :value="model">
                   {{ model }}
                 </option>
               </select>
-              <p class="setting-hint">Larger models are more accurate but slower to process.</p>
+              <p class="setting-hint">{{ $t('settings.whisper_hint', 'Larger models are more accurate but slower to process.') }}</p>
             </div>
           </div>
 
           <div v-if="activeTab === 'models'" class="tab-content">
             <div class="tab-header">
-              <h3>Model Manager</h3>
+              <h3>{{ $t('settings.model_manager', 'Model Manager') }}</h3>
             </div>
             <div class="fonts-list" v-if="downloadedModels.length > 0">
               <div v-for="model in downloadedModels" :key="model.id" class="font-item">
                 <div style="display: flex; flex-direction: column;">
                   <span class="font-name" style="font-weight: bold; margin-bottom: 4px;">{{ model.name }}</span>
-                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Size: {{ model.size_str }}</span>
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ $t('settings.size', 'Size:') }} {{ model.size_str }}</span>
                 </div>
-                <button class="btn btn-secondary btn-sm" @click="deleteDownloadedModel(model.id)" title="Delete model">
+                <button class="btn btn-secondary btn-sm" @click="deleteDownloadedModel(model.id)" :title="$t('settings.delete_model', 'Delete model')">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5f56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -248,7 +248,7 @@ onMounted(() => {
               </div>
             </div>
             <div v-else class="no-fonts">
-              No models downloaded yet.
+              {{ $t('settings.no_models', 'No models downloaded yet.') }}
             </div>
           </div>
 
