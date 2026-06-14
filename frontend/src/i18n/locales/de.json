@@ -45,7 +45,13 @@
     "text_color": "Textfarbe",
     "text_shadow": "Schlagschatten",
     "text_add": "Text hinzufügen",
-    "text_remove": "Text entfernen"
+    "text_remove": "Text entfernen",
+    "subtitles": "Auto Untertitel",
+    "enable": "Aktivieren",
+    "font_size": "Schriftgröße",
+    "subtitle_base": "Grundfarbe",
+    "subtitle_highlight": "Highlight",
+    "subtitle_stroke": "Kontur"
   },
   "batch": {
     "title": "Stapelverarbeitung",
@@ -87,6 +93,15 @@
     "delete": "Löschen",
     "no_fonts": "Keine benutzerdefinierten Schriftarten hochgeladen.",
     "upload_success": "Schriftart erfolgreich hochgeladen",
-    "upload_error": "Fehler beim Hochladen der Schriftart"
+    "upload_error": "Fehler beim Hochladen der Schriftart",
+    "subtitles_category": "Untertitel",
+    "models_category": "Modelle",
+    "subtitles_config": "Untertitel Konfiguration",
+    "whisper_model": "Whisper Modellgröße",
+    "whisper_hint": "Größere Modelle sind genauer, aber langsamer.",
+    "model_manager": "Modell Manager",
+    "size": "Größe:",
+    "delete_model": "Modell löschen",
+    "no_models": "Noch keine Modelle heruntergeladen."
   }
 }

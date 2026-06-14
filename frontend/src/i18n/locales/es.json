@@ -45,7 +45,13 @@
     "text_color": "Color del texto",
     "text_shadow": "Sombra",
     "text_add": "Añadir Texto",
-    "text_remove": "Quitar Texto"
+    "text_remove": "Quitar Texto",
+    "subtitles": "Subtítulos Automáticos",
+    "enable": "Activar",
+    "font_size": "Tamaño de Fuente",
+    "subtitle_base": "Color Base",
+    "subtitle_highlight": "Resaltado",
+    "subtitle_stroke": "Contorno"
   },
   "batch": {
     "title": "Procesamiento por lotes",
@@ -87,6 +93,15 @@
     "delete": "Eliminar",
     "no_fonts": "No hay fuentes personalizadas subidas.",
     "upload_success": "Fuente subida exitosamente",
-    "upload_error": "Error al subir la fuente"
+    "upload_error": "Error al subir la fuente",
+    "subtitles_category": "Subtítulos",
+    "models_category": "Modelos",
+    "subtitles_config": "Configuración de Subtítulos",
+    "whisper_model": "Tamaño del Modelo Whisper",
+    "whisper_hint": "Los modelos más grandes son más precisos pero más lentos.",
+    "model_manager": "Gestor de Modelos",
+    "size": "Tamaño:",
+    "delete_model": "Eliminar modelo",
+    "no_models": "No se han descargado modelos aún."
   }
 }

@@ -45,7 +45,13 @@
     "text_color": "Text Color",
     "text_shadow": "Drop Shadow",
     "text_add": "Add Text",
-    "text_remove": "Remove Text"
+    "text_remove": "Remove Text",
+    "subtitles": "Auto Subtitles",
+    "enable": "Enable",
+    "font_size": "Font Size",
+    "subtitle_base": "Base Color",
+    "subtitle_highlight": "Highlight",
+    "subtitle_stroke": "Stroke"
   },
   "batch": {
     "title": "Batch Processing",
@@ -87,6 +93,15 @@
     "delete": "Delete",
     "no_fonts": "No custom fonts uploaded.",
     "upload_success": "Font uploaded successfully",
-    "upload_error": "Failed to upload font"
+    "upload_error": "Failed to upload font",
+    "subtitles_category": "Subtitles",
+    "models_category": "Models",
+    "subtitles_config": "Subtitles Configuration",
+    "whisper_model": "Whisper Model Size",
+    "whisper_hint": "Larger models are more accurate but slower to process.",
+    "model_manager": "Model Manager",
+    "size": "Size:",
+    "delete_model": "Delete model",
+    "no_models": "No models downloaded yet."
   }
 }
