@@ -7,6 +7,9 @@ import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import MediaManager from './components/MediaManager.vue'
 import SettingsMenu from './components/SettingsMenu.vue'
+import packageJson from '../package.json'
+
+const appVersion = packageJson.version
 
 const currentView = ref<'home' | 'media'>('home')
 const showSettings = ref(false)
@@ -93,7 +96,7 @@ const handleFontsUpdated = () => {
 
   <footer class="footer">
     <div class="footer-content glass">
-      <p>&copy; 2026 <a href="https://gurk.dev" target="_blank" rel="noopener">Gurkenwerfer</a></p>
+      <p>&copy; 2026 Reframe v{{ appVersion }} &bull; by <a href="https://gurk.dev" target="_blank" rel="noopener">Gurkenwerfer</a></p>
       <div class="social-links">
         <a href="https://matrix.to/#/@gurkenwerfer:gurk.dev" target="_blank" rel="noopener" class="social-link" title="Matrix">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
