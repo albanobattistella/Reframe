@@ -75,6 +75,64 @@ def get_video_dimensions(filepath: str) -> tuple[int, int]:
     except Exception:
         return 1920, 1080
 
+def get_video_metadata(filepath: str) -> dict:
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height,r_frame_rate,duration", "-of",
+             "json", filepath],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        data = json.loads(result.stdout)
+        stream = data.get("streams", [{}])[0]
+        
+        width = stream.get("width", 0)
+        height = stream.get("height", 0)
+        duration_str = stream.get("duration")
+        duration = float(duration_str) if duration_str else 0.0
+        
+        r_frame_rate = stream.get("r_frame_rate", "0/1")
+        if "/" in r_frame_rate:
+            num, den = r_frame_rate.split("/")
+            fps = float(num) / float(den) if float(den) != 0 else 0
+        else:
+            fps = float(r_frame_rate)
+            
+        return {
+            "width": width,
+            "height": height,
+            "duration": duration,
+            "fps": round(fps, 2)
+        }
+    except Exception as e:
+        print(f"Error getting metadata for {filepath}: {e}")
+        return {"width": 0, "height": 0, "duration": 0.0, "fps": 0.0}
+
+def parse_ass_transcript(filepath: str) -> str:
+    try:
+        if not os.path.exists(filepath):
+            return ""
+        with open(filepath, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        transcript = []
+        for line in lines:
+            if line.startswith("Dialogue:"):
+                parts = line.split(",", 9)
+                if len(parts) >= 10:
+                    text = parts[9].strip()
+                    text = re.sub(r'\{[^}]+\}', '', text)
+                    if text:
+                        transcript.append(text)
+        deduped = []
+        for t in transcript:
+            if not deduped or t != deduped[-1]:
+                deduped.append(t)
+        return " ".join(deduped)
+    except Exception:
+        return ""
+
 def hex_to_ass_color(hex_str: str) -> str:
     hex_str = hex_str.lstrip('#')
     if len(hex_str) == 6:
@@ -605,7 +663,8 @@ async def process_video(
     subtitleX: int = Form(0),
     subtitleY: int = Form(0),
     subtitleW: int = Form(0),
-    subtitleH: int = Form(0)
+    subtitleH: int = Form(0),
+    customFilename: str = Form(None)
 ):
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1] or ".mp4" if file.filename else ".mp4"
@@ -640,7 +699,15 @@ async def process_video(
                 f.write(text_content)
             text_paths.append(text_path)
         
-    output_filename = f"{job_id}_out.mp4"
+    if customFilename:
+        safe_name = "".join(c for c in customFilename if c.isalnum() or c in " .-_()")
+        if not safe_name.lower().endswith(".mp4"):
+            safe_name += ".mp4"
+            
+        output_filename = f"{job_id}_{safe_name}"
+    else:
+        output_filename = f"{job_id}_out.mp4"
+        
     output_path = os.path.join(EXPORT_DIR, output_filename)
     
     asyncio.create_task(process_video_pipeline(
@@ -736,9 +803,17 @@ async def automate_process(
             textYs.append(int(t.get("relativeY", 0) * ch))
             textRotations.append(t.get("rotation", 0))
             
-    output_filename = f"{job_id}_out.mp4"
+    customFilename = settings.get("customFilename")
+    if customFilename:
+        safe_name = "".join(c for c in customFilename if c.isalnum() or c in " .-_()")
+        if not safe_name.lower().endswith(".mp4"):
+            safe_name += ".mp4"
+            
+        output_filename = f"{job_id}_{safe_name}"
+    else:
+        output_filename = f"{job_id}_out.mp4"
+        
     output_path = os.path.join(EXPORT_DIR, output_filename)
-    
     quality = settings.get("quality", "high")
     muteAudio = "true" if settings.get("muteAudio") else "false"
     useGpu = "true" if settings.get("useGpu") else "false"
@@ -780,11 +855,16 @@ async def progress_ws(websocket: WebSocket, job_id: str):
             active_connections[job_id].remove(websocket)
 
 @app.get("/api/download/{job_id}")
-async def download_video(job_id: str, filename: str = "reframe_export.mp4"):
-    output_filename = f"{job_id}_out.mp4"
-    output_path = os.path.join(EXPORT_DIR, output_filename)
-    if os.path.exists(output_path):
-        return FileResponse(output_path, media_type="video/mp4", filename=filename)
+async def download_video(job_id: str, filename: str = None):
+    output_filename = None
+    
+    for f in os.listdir(EXPORT_DIR):
+        if f.startswith(f"{job_id}_") and f.lower().endswith('.mp4'):
+            output_filename = f
+            break
+                    
+    if output_filename and os.path.exists(os.path.join(EXPORT_DIR, output_filename)):
+        return FileResponse(os.path.join(EXPORT_DIR, output_filename), media_type="video/mp4", filename=filename or output_filename)
     return JSONResponse(status_code=404, content={"detail": "File not found"})
 
 @app.get("/api/media")
@@ -805,10 +885,24 @@ async def list_media():
         for f in os.listdir(EXPORT_DIR):
             path = os.path.join(EXPORT_DIR, f)
             if os.path.isfile(path):
+                metadata = {}
+                transcript = ""
+                if f.lower().endswith(('.mp4', '.mov', '.webm', '.avi')):
+                    metadata = get_video_metadata(path)
+                    job_id = None
+                    if "_" in f:
+                        job_id = f.split("_", 1)[0]
+
+                    if job_id:
+                        ass_path = os.path.join(UPLOAD_DIR, f"{job_id}_subs.ass")
+                        transcript = parse_ass_transcript(ass_path)
+                        
                 exports.append({
                     "filename": f,
                     "size": os.path.getsize(path),
-                    "created": os.path.getctime(path)
+                    "created": os.path.getctime(path),
+                    "metadata": metadata,
+                    "transcript": transcript
                 })
                 
     # Sort descending by creation time

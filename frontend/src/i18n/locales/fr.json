@@ -74,7 +74,14 @@
     "empty": "Aucun fichier multimédia trouvé dans ce dossier.",
     "delete_success": "Fichier supprimé avec succès",
     "delete_error": "Échec de la suppression du fichier",
-    "delete_all": "Tout supprimer"
+    "delete_all": "Tout supprimer",
+    "framerate": "Fréquence d'images",
+    "resolution": "Résolution",
+    "duration": "Durée",
+    "transcript": "Transcription",
+    "size": "Taille",
+    "date": "Date",
+    "fps": "fps"
   },
   "config": {
     "import": "Importer la configuration",

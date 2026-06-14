@@ -74,7 +74,14 @@
     "empty": "No se encontraron archivos multimedia en esta carpeta.",
     "delete_success": "Archivo eliminado correctamente",
     "delete_error": "Error al eliminar el archivo",
-    "delete_all": "Eliminar todo"
+    "delete_all": "Eliminar todo",
+    "framerate": "Tasa de fotogramas",
+    "resolution": "Resolución",
+    "duration": "Duración",
+    "transcript": "Transcripción",
+    "size": "Tamaño",
+    "date": "Fecha",
+    "fps": "fps"
   },
   "config": {
     "import": "Importar Configuración",

@@ -83,7 +83,14 @@
     "empty": "Keine Mediendateien in diesem Ordner gefunden.",
     "delete_success": "Datei erfolgreich gelöscht",
     "delete_error": "Fehler beim Löschen der Datei",
-    "delete_all": "Alle löschen"
+    "delete_all": "Alle löschen",
+    "framerate": "Bildrate",
+    "resolution": "Auflösung",
+    "duration": "Dauer",
+    "transcript": "Transkript",
+    "size": "Größe",
+    "date": "Datum",
+    "fps": "fps"
   },
   "settings": {
     "title": "Einstellungen",

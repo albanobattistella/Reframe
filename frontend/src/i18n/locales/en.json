@@ -83,7 +83,14 @@
     "empty": "No media files found in this folder.",
     "delete_success": "File deleted successfully",
     "delete_error": "Failed to delete file",
-    "delete_all": "Delete All"
+    "delete_all": "Delete All",
+    "framerate": "Framerate",
+    "resolution": "Resolution",
+    "duration": "Duration",
+    "transcript": "Transcript",
+    "size": "Size",
+    "date": "Date",
+    "fps": "fps"
   },
   "settings": {
     "title": "Settings",

@@ -539,8 +539,15 @@ const exportVideo = async (): Promise<void> => {
   progress.value = 0
   downloadUrl.value = null
   
+  const origName = props.videoFile.name.substring(0, props.videoFile.name.lastIndexOf('.')) || props.videoFile.name;
+  const ratio = selectedPreset.value.id === 'custom' 
+    ? `${customRatioW.value}x${customRatioH.value}`
+    : t('cropper.presets.' + selectedPreset.value.id).split(' ')[0].replace(':', 'x');
+  const customFileName = `reframe_${origName}_${ratio}.mp4`;
+  
   const formData = new FormData()
   formData.append('file', props.videoFile)
+  formData.append('customFilename', customFileName)
   formData.append('x', realX.toString())
   formData.append('y', realY.toString())
   formData.append('width', realW.toString())
